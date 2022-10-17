@@ -28,10 +28,10 @@ for st in stations:
 	# print(reqMapping[id])
 	reqidx = reqMapping[st['index']]
 	reqidx.extend(leftover)
-	print(reqidx)
+	# print(reqidx)
 	req = [requests[i] for i in reqidx]
 	indices = scheduling(req)
 	leftover = list(set(reqidx)-set(indices))
-	print(leftover)
+	# print(leftover)
 
 

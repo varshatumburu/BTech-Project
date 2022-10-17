@@ -5,12 +5,5 @@
 		"schedule": [],
 		"nfast": 1,
 		"nslow": 3
-	},
-	{
-		"index":1,
-		"location": [4,2],
-		"schedule": [],
-		"nfast": 2,
-		"nslow": 2
 	}
 ]
