@@ -1,44 +1,42 @@
 import json, datetime, math
+import re
 from scheduler import prebooked_scheduling, SLOT_TIME
+
+global_requests = json.load(open('requests.json'))
 
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
-requests = json.load(open('requests.json'))
-requests = [requests[i] for i in prebooked_scheduling(requests)]
-
-nreq = len(requests)
-
 graph=dict(); reqSlots = dict()
-for req in requests:
-	st = roundup(req['start_time'])
-	nslots = int(math.ceil(req['duration']/SLOT_TIME))
-	reqSlots[req['index']]=nslots
-
-	# if st + req['duration']>req['end_time']: continue
-
-	matchedSlots=[]
-	i=1
-	while st + req['duration']<=req['end_time']:
-		matchedSlots.append(int(st/SLOT_TIME))
-		st+=SLOT_TIME; i+=1
-		# while i<nslots:
-		# 	matchedSlots.append(int(st/SLOT_TIME))
-		# 	st+=SLOT_TIME; i+=1
-	# print(req['index'],matchedSlots)
-	graph[req['index']]=(matchedSlots)
-
-# print(graph)
 slot_mapping = dict(); used=dict()
-# def verifyAvailability(slot, nslots):
-# 	for i in range(nslots):
-# 		if(slot_mapping.get(slot)!=None): 
-# 			print(slot_mapping[slot])
-# 		if(slot_mapping.get(slot)!=None and not(kuhn(slot_mapping[slot]))):
-# 			print("slot",slot, slot_mapping[slot])
-# 			return False
-# 		slot+=1
-# 	return True
+
+def createGraph(requests):
+	nreq = len(requests)
+
+	for req in requests:
+		st = roundup(req['start_time'])
+		nslots = int(math.ceil(req['duration']/SLOT_TIME))
+		reqSlots[req['index']]=nslots
+
+		matchedSlots=[]
+		i=1
+		while st + req['duration']<=req['end_time']:
+			matchedSlots.append(int(st/SLOT_TIME))
+			st+=SLOT_TIME; i+=1
+
+		graph[req['index']]=(matchedSlots)
+
+	# print(graph)
+	
+def printSchedule():
+	# print("Current Schedule: ")
+	check=[]
+	for key in sorted(slot_mapping.keys()):
+		if(slot_mapping[key] in check): continue
+		check.append(slot_mapping[key])
+		dur = [req  for req in global_requests if req['index']==slot_mapping[key]][0]['duration']
+		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
+		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
 def kuhn(src, start_slot=0):
 	# print(src, start_slot)
@@ -72,60 +70,58 @@ def kuhn(src, start_slot=0):
 
 	return False
 
-satisfied_requests=0
-# print(nreq)
-for i in [r['index'] for r in requests]:
-	used.clear()
-	if(kuhn(i)): satisfied_requests+=1
+def init_schedule(reqSet):
+	slot_mapping.clear(); graph.clear()
+	requests = [req for req in global_requests if req['index'] in reqSet]
+	selected = prebooked_scheduling(requests)
+	requests = [req for req in requests if req['index'] in selected]
 
+	createGraph(requests)
+	satisfied_requests=0
+	# print(nreq)
+	for i in [r['index'] for r in requests]:
+		used.clear()
+		if(kuhn(i)): satisfied_requests+=1
 
-def printSchedule():
-	print("Current Schedule: ")
-	check=[]
-	for key in sorted(slot_mapping.keys()):
-		if(slot_mapping[key] in check): continue
-		check.append(slot_mapping[key])
-		dur = [req  for req in requests if req['index']==slot_mapping[key]][0]['duration']
-		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
-		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
-
-printSchedule()
+	printSchedule()
+	return selected
 
 # Take in dynamic inputs 
-idx = max([r['index'] for r in requests])+1
-while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
-	duration = int(input("Enter duration: "))
-	start_time = int(input("Enter start of availability: "))
-	end_time = int(input("Enter end time of availability: "))
+def dynamic_requests():
+	idx = max([r['index'] for r in global_requests])+1
+	while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
+		duration = int(input("Enter duration: "))
+		start_time = int(input("Enter start of availability: "))
+		end_time = int(input("Enter end time of availability: "))
 
-	requests.append({
-		"index":idx,
-		"duration": duration,
-		"start_time": start_time,
-		"end_time": end_time
-	})
+		global_requests.append({
+			"index":idx,
+			"duration": duration,
+			"start_time": start_time,
+			"end_time": end_time
+		})
 
-	st = roundup(start_time)
-	nslots = int(math.ceil(duration/SLOT_TIME))
-	reqSlots[idx]=nslots
-	matchedSlots=[]
-	while st + duration<=end_time:
-		matchedSlots.append(int(st/SLOT_TIME))
-		st+=SLOT_TIME
+		st = roundup(start_time)
+		nslots = int(math.ceil(duration/SLOT_TIME))
+		reqSlots[idx]=nslots
+		matchedSlots=[]
+		while st + duration<=end_time:
+			matchedSlots.append(int(st/SLOT_TIME))
+			st+=SLOT_TIME
 
-	graph[idx]=(matchedSlots)
-	# print(graph)
+		graph[idx]=(matchedSlots)
+		# print(graph)
 
-	used.clear()
-	if(kuhn(idx)): 
-		print(">>> NEW SCHEDULE. REQUEST ACCEPTED!")
-		satisfied_requests+=1
-	else: 
-		print("\n>>> BUSY SCHEDULE. REQUEST DENIED")
-	# print(slot_mapping)
+		used.clear()
+		if(kuhn(idx)): 
+			print(">>> NEW SCHEDULE. REQUEST ACCEPTED!")
+			satisfied_requests+=1
+		else: 
+			print("\n>>> BUSY SCHEDULE. REQUEST DENIED")
+		# print(slot_mapping)
 
-	nreq+=1; idx+=1
-	printSchedule()
+		nreq+=1; idx+=1
+		printSchedule()
 
 
 
