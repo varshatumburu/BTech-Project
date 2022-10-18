@@ -1,6 +1,4 @@
 import json, datetime, math
-import re
-from venv import create
 from scheduler import prebooked_scheduling, SLOT_TIME
 
 global_requests = json.load(open('requests.json'))
@@ -86,7 +84,7 @@ def init_schedule(reqSet):
 	return selected
 
 # Take in dynamic inputs 
-def dynamic_requests(satisfied_requests):
+def dynamic_requests(satisfied_requests=0):
 	nreq = len(global_requests)
 	idx = max([r['index'] for r in global_requests])+1
 	while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
@@ -114,10 +112,10 @@ def dynamic_requests(satisfied_requests):
 
 		used.clear()
 		if(kuhn(idx)): 
-			print("\n>>> NEW SCHEDULE. REQUEST ACCEPTED!")
+			print("\n>>> REQUEST ACCEPTED! NEW SCHEDULE:")
 			satisfied_requests+=1
 		else: 
-			print("\n>>> BUSY SCHEDULE. REQUEST DENIED")
+			print("\n>>> REQUEST DENIED. BUSY SCHEDULE.")
 		# print(slot_mapping)
 
 		nreq+=1; idx+=1
@@ -132,4 +130,4 @@ if __name__=='__main__':
 		if(kuhn(i)): satisfied_requests+=1
 
 	printSchedule()
-	dynamic_requests(satisfied_requests)
+	dynamic_requests()
