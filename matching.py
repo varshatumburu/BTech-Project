@@ -1,5 +1,6 @@
 import json, datetime, math
 import re
+from venv import create
 from scheduler import prebooked_scheduling, SLOT_TIME
 
 global_requests = json.load(open('requests.json'))
@@ -11,8 +12,6 @@ graph=dict(); reqSlots = dict()
 slot_mapping = dict(); used=dict()
 
 def createGraph(requests):
-	nreq = len(requests)
-
 	for req in requests:
 		st = roundup(req['start_time'])
 		nslots = int(math.ceil(req['duration']/SLOT_TIME))
@@ -87,7 +86,8 @@ def init_schedule(reqSet):
 	return selected
 
 # Take in dynamic inputs 
-def dynamic_requests():
+def dynamic_requests(satisfied_requests):
+	nreq = len(global_requests)
 	idx = max([r['index'] for r in global_requests])+1
 	while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
 		duration = int(input("Enter duration: "))
@@ -114,7 +114,7 @@ def dynamic_requests():
 
 		used.clear()
 		if(kuhn(idx)): 
-			print(">>> NEW SCHEDULE. REQUEST ACCEPTED!")
+			print("\n>>> NEW SCHEDULE. REQUEST ACCEPTED!")
 			satisfied_requests+=1
 		else: 
 			print("\n>>> BUSY SCHEDULE. REQUEST DENIED")
@@ -123,5 +123,13 @@ def dynamic_requests():
 		nreq+=1; idx+=1
 		printSchedule()
 
+if __name__=='__main__':
+	createGraph(global_requests)
+	satisfied_requests=0
+	# print(nreq)
+	for i in [r['index'] for r in global_requests]:
+		used.clear()
+		if(kuhn(i)): satisfied_requests+=1
 
-
+	printSchedule()
+	dynamic_requests(satisfied_requests)
