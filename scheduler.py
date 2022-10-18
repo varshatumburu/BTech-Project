@@ -86,7 +86,7 @@ def optimize(jobs):
 	return global_dp[n-1],used[idx]
 
 
-def scheduling(requests):
+def prebooked_scheduling(requests):
 
 	permuted_jobs = []
 	for r in requests:
@@ -100,47 +100,15 @@ def scheduling(requests):
 	permuted_jobs=sorted(permuted_jobs)
 	optimized_time, used_intervals = optimize(permuted_jobs)
 
-	selected_jobs = dict()
-	time_mapping = dict()
-	print("Slot Time =", SLOT_TIME, "mins")
-	for interval in used_intervals:
-		selected_jobs[permuted_jobs[interval].index]=permuted_jobs[interval]
-		for i in range(permuted_jobs[interval].start, permuted_jobs[interval].start + permuted_jobs[interval].duration, SLOT_TIME):
-			time_mapping[i]=permuted_jobs[interval].index
-		time = datetime.time(permuted_jobs[interval].start//60, permuted_jobs[interval].start%60)
-		print(f"Request {permuted_jobs[interval].index} scheduled at {time} for {permuted_jobs[interval].duration} mins.")
+	# selected_jobs = dict()
+	# time_mapping = dict()
+	# print("Slot Time =", SLOT_TIME, "mins")
+	# for interval in used_intervals:
+	# 	# selected_jobs[permuted_jobs[interval].index]=permuted_jobs[interval]
+	# 	for i in range(permuted_jobs[interval].start, permuted_jobs[interval].start + permuted_jobs[interval].duration, SLOT_TIME):
+	# 		time_mapping[i]=permuted_jobs[interval].index
+	# 	time = datetime.time(permuted_jobs[interval].start//60, permuted_jobs[interval].start%60)
+	# 	print(f"Request {permuted_jobs[interval].index} scheduled at {time} for {permuted_jobs[interval].duration} mins.")
 
-	scheduled_jobs = [permuted_jobs[interval].index for interval  in used_intervals]
-	return scheduled_jobs
-
-	# # Take dynamic inputs 
-	# ind = len(requests)
-	# while input("Enter next request: (0 to break)")!="0":
-	# 	duration = int(input("Enter time required for charging:"))
-	# 	start = int(input("Enter start time of availability:"))
-	# 	end = int(input("Enter end of availability:"))
-
-	# 	while start+duration<=end:
-	# 		jb = Job(ind, start, start+duration, duration)
-	# 		print(time_mapping)
-	# 		if start in time_mapping.keys(): 
-	# 			occ = permuted_jobs[time_mapping[start]]
-	# 			newEndTime = start+duration+math.ceil(occ.duration/SLOT_TIME)*SLOT_TIME+SLOT_TIME
-	# 			fl=0
-	# 			while newEndTime <= requests[time_mapping[start]]['end_time']:
-	# 				if(time_mapping.get(newEndTime)==None):
-	# 					fl=1
-	# 					break
-	# 				occ.start += SLOT_TIME
-	# 				newEndTime += SLOT_TIME
-
-				
-
-					
-	# 		start+=SLOT_TIME
-			
-
-
-		
-
-
+	scheduled_job_indices = [permuted_jobs[interval].index for interval in used_intervals]
+	return scheduled_job_indices
