@@ -28,13 +28,13 @@ if __name__=="__main__":
 
 	# print(reqMapping)
 	blocked=set(); leftover=[]
-	prev=-1; i=1
+	prev=-1; iter=1
 
 	while len(blocked)!=len(requests) and prev!=len(blocked):
-		print(f"\n>>> Iteration {i} >>> ")
+		print(f"\n>>> Iteration {iter} >>> ")
 		for i,st in enumerate(stations):
 			prev=len(blocked)
-			print(f"\nStation {st['index']} Schedule:")
+			print(f"\nSchedule for Station {st['index']}:")
 			# print(reqMapping[id])
 			reqidx = reqMapping[st['index']]
 			new_additions = [i for i in leftover if i not in reqidx]
@@ -52,7 +52,7 @@ if __name__=="__main__":
 			blocked = set(list(blocked)+list(selected))
 
 		if(prev==len(blocked)): break
-		i+=1
+		iter+=1
 		# print(blocked)
 	print("\nCompleted scheduling!")
 
