@@ -8,6 +8,7 @@ def roundup(x):
 
 graph=dict(); reqSlots = dict()
 slot_mapping = dict(); used=dict()
+satisfied_requests=0
 
 def createGraph(requests):
 	for req in requests:
@@ -25,13 +26,13 @@ def createGraph(requests):
 
 	# print(graph)
 	
-def printSchedule():
+def printSchedule(request=global_requests):
 	# print("Current Schedule: ")
 	check=[]
 	for key in sorted(slot_mapping.keys()):
 		if(slot_mapping[key] in check): continue
 		check.append(slot_mapping[key])
-		dur = [req  for req in global_requests if req['index']==slot_mapping[key]][0]['duration']
+		dur = [req for req in request if req['index']==slot_mapping[key]][0]['duration']
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
