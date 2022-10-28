@@ -5,6 +5,7 @@ import matching
 from ast import literal_eval
 
 distances = []
+slotMapping = dict()
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
@@ -40,7 +41,7 @@ def iterative_scheduling(blocked, leftover, reqMapping):
 			# new_additions = [i for i in leftover if i not in reqidx]
 			# reqidx.extend(new_additions)
 
-			selected = matching.init_schedule(reqidx)
+			selected, slotMapping[i] = matching.init_schedule(reqidx, i, dict())
 			leftover = list(set(reqidx)-set(selected))
 
 			# print(leftover)
@@ -63,11 +64,11 @@ if __name__=="__main__":
 	requests = json.load(open('requests.json'))	
 
 	stationDistances(requests, stations)
-	reqMapping = createMapping()
+	requestMapping = createMapping()
 
 	blocked=set(); leftover=[]
 
-	iterative_scheduling(blocked, leftover, reqMapping)
+	iterative_scheduling(blocked, leftover, requestMapping)
 
 	while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
 		curr_idx = len(requests)
@@ -88,7 +89,6 @@ if __name__=="__main__":
 		stationDistances([new_request], stations)
 
 		sortedStations = [i[0] for i in sorted(enumerate(distances[curr_idx]), key = lambda x:x[1])]
-		print(sortedStations)
 
 		st = roundup(start_time)
 		nslots = int(math.ceil(duration/SLOT_TIME))
@@ -98,21 +98,25 @@ if __name__=="__main__":
 			matchedSlots.append(int(st/SLOT_TIME))
 			st+=SLOT_TIME
 
-		matching.graph[curr_idx]=(matchedSlots)
+		# matching.graph[curr_idx]=(matchedSlots)
+		# print("ok",matching.graph)
 		flag=0
 
 		for s in sortedStations:
-			reqMapping[s].append(curr_idx)
+			matching.graphs[s][curr_idx]= matchedSlots
+			requestMapping[s].append(curr_idx)
+
 			matching.used.clear()
-			if(matching.kuhn(curr_idx)): 
+			if(matching.kuhn2(curr_idx, s, 0, slotMapping[s])): 
 				print("\n>>> REQUEST ACCEPTED! NEW SCHEDULE:")
 				matching.satisfied_requests+=1
 				print(f"\nAccommodated in Station {s}:")
-				matching.printSchedule(requests)
+				matching.printSchedule(requests, slotMapping[s])
 				flag=1
 				break
 			else:
-				reqMapping[s].remove(curr_idx)
+				requestMapping[s].remove(curr_idx)
+				del matching.graphs[s][curr_idx]
 
 		if(flag==0):
 			print("\n>>> REQUEST DENIED.")
