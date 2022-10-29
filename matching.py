@@ -11,7 +11,7 @@ slot_mapping = dict(); used=dict()
 satisfied_requests=0
 graphs = dict()
 
-def createGraph(requests):
+def createGraph(requests, station_index=-1):
 	for req in requests:
 		st = roundup(req['start_time'])
 		nslots = int(math.ceil(req['duration']/SLOT_TIME))
@@ -23,22 +23,10 @@ def createGraph(requests):
 			matchedSlots.append(int(st/SLOT_TIME))
 			st+=SLOT_TIME; i+=1
 
-		graph[req['index']]=(matchedSlots)
-
-def createGraph(requests, station_index):
-	for req in requests:
-		st = roundup(req['start_time'])
-		nslots = int(math.ceil(req['duration']/SLOT_TIME))
-		reqSlots[req['index']]=nslots
-
-		matchedSlots=[]
-		i=1
-		while st + req['duration']<=req['end_time']:
-			matchedSlots.append(int(st/SLOT_TIME))
-			st+=SLOT_TIME; i+=1
-
-		graphs[station_index][req['index']]=(matchedSlots)
-
+		if(station_index==-1):
+			graph[req['index']]=(matchedSlots)
+		else:
+			graphs[station_index][req['index']]=(matchedSlots)
 	
 def printSchedule(request=global_requests, slot_mapping=slot_mapping):
 
@@ -50,13 +38,18 @@ def printSchedule(request=global_requests, slot_mapping=slot_mapping):
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
-def kuhn(src, start_slot=0, slot_mapping=slot_mapping):
+def kuhn(src, start_slot=0, slot_mapping=slot_mapping, station_index=-1):
 
 	if(used.get(src)!=None): return False
 	used[src]=True
 
 	nslots = reqSlots[src]
-	for slot in graph[src]:
+	if station_index==-1:
+		possibleSlots = graph[src]
+	else:
+		possibleSlots = graphs[station_index][src]
+
+	for slot in possibleSlots:
 		if slot<start_slot:continue
 
 		fl=1
@@ -68,7 +61,7 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping):
 			return True
 		else:
 			for l in lst:
-				if(kuhn(slot_mapping[l], slot+nslots, slot_mapping)): fl*=1
+				if(kuhn(slot_mapping[l], slot+nslots, slot_mapping, station_index)): fl*=1
 				else: fl*=0; break
 
 			if(fl):
@@ -78,52 +71,9 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping):
 
 	return False
 
-def kuhn2(src, station_index, start_slot=0, slot_mapping=slot_mapping):
-
-	if(used.get(src)!=None): return False
-	used[src]=True
-
-	nslots = reqSlots[src]
-	for slot in graphs[station_index][src]:
-		if slot<start_slot:continue
-
-		fl=1
-		lst = [val for val in range(slot,slot+nslots) if val in slot_mapping.keys()]
-
-		if(len(lst)==0):
-			for i in range(nslots):
-				slot_mapping[slot+i]=src
-			return True
-		else:
-			for l in lst:
-				if(kuhn2(slot_mapping[l], station_index, slot+nslots, slot_mapping)): fl*=1
-				else: fl*=0; break
-
-			if(fl):
-				for i in range(nslots):
-					slot_mapping[slot+i]=src
-				return True
-
-	return False
-
-def init_schedule(reqSet, slot_mapping = dict()):
-	graph.clear()
-	requests = [req for req in global_requests if req['index'] in reqSet]
-	selected = prebooked_scheduling(requests)
-	requests = [req for req in requests if req['index'] in selected]
-
-	createGraph(requests)
-	satisfied_requests=0
-	# print(nreq)
-	for i in [r['index'] for r in requests]:
-		used.clear()
-		if(kuhn(i,0,slot_mapping)): satisfied_requests+=1
-
-	printSchedule(global_requests, slot_mapping)
-	return selected, slot_mapping
-
-def init_schedule(reqSet, station_index, slot_mapping = dict()):
-	graphs[station_index] = {}
+def init_schedule(reqSet, station_index=-1, slot_mapping = dict()):
+	if(station_index==-1): graph.clear()
+	else: graphs[station_index] = {}
 	requests = [req for req in global_requests if req['index'] in reqSet]
 	selected = prebooked_scheduling(requests)
 	requests = [req for req in requests if req['index'] in selected]
@@ -133,10 +83,9 @@ def init_schedule(reqSet, station_index, slot_mapping = dict()):
 	# print(nreq)
 	for i in [r['index'] for r in requests]:
 		used.clear()
-		if(kuhn2(i,station_index,0,slot_mapping)): satisfied_requests+=1
+		if(kuhn(i,0,slot_mapping, station_index)): satisfied_requests+=1
 
 	printSchedule(global_requests, slot_mapping)
-	print(graphs)
 	return selected, slot_mapping
 
 # Take in dynamic inputs 

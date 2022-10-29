@@ -107,7 +107,7 @@ if __name__=="__main__":
 			requestMapping[s].append(curr_idx)
 
 			matching.used.clear()
-			if(matching.kuhn2(curr_idx, s, 0, slotMapping[s])): 
+			if(matching.kuhn(curr_idx, 0, slotMapping[s], s)): 
 				print("\n>>> REQUEST ACCEPTED! NEW SCHEDULE:")
 				matching.satisfied_requests+=1
 				print(f"\nAccommodated in Station {s}:")
