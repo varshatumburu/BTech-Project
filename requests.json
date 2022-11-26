@@ -1,0 +1,58 @@
+[
+	{
+		"index":0,
+		"location": "(1,2)",
+		"rcharge": 20,
+		"duration": 30,
+		"start_time": 600,
+		"end_time": 630
+	},
+	{
+		"index":1,
+		"location": "(2,3)",
+		"rcharge": 10,
+		"duration": 50,
+		"start_time": 600,
+		"end_time":650
+	},
+	{
+		"index":2,
+		"location": "(-2,2)",
+		"rcharge": 15,
+		"duration": 10,
+		"start_time": 660,
+		"end_time": 720
+	},
+	{
+		"index":3,
+		"location":"(2,1)",
+		"rcharge": 15,
+		"duration": 5,
+		"start_time": 660,
+		"end_time": 670
+	},
+	{
+		"index":4,
+		"location": "(3,2)",
+		"rcharge": 15,
+		"duration": 20,
+		"start_time": 640,
+		"end_time": 660
+	},
+	{
+		"index":5,
+		"location": "(2,-2)",
+		"rcharge": 15,
+		"duration": 20,
+		"start_time": 675,
+		"end_time": 695
+	},
+	{
+		"index":6,
+		"location": "(2,-1)",
+		"rcharge": 15,
+		"duration": 10,
+		"start_time": 640,
+		"end_time": 660
+	}
+]
