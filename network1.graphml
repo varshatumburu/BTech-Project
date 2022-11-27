@@ -16,7 +16,7 @@
 <key id="d2" for="graph" attr.name="crs" attr.type="string"/>
 <key id="d1" for="graph" attr.name="created_with" attr.type="string"/>
 <key id="d0" for="graph" attr.name="created_date" attr.type="string"/>
-<graph edgedefault="directed"><data key="d0">2022-11-27 00:51:36</data>
+<graph edgedefault="directed"><data key="d0">2022-11-27 16:34:24</data>
 <data key="d1">OSMnx 1.1.2</data>
 <data key="d2">epsg:4326</data>
 <data key="d3">True</data>
@@ -749,7 +749,7 @@
 </edge>
 <edge source="1535148784" target="7203532072" id="0">
   <data key="d7">[1065482352, 121070865, 140114355]</data>
-  <data key="d10">['West Boring Canal Road', 'East Boring Canal Road']</data>
+  <data key="d10">['East Boring Canal Road', 'West Boring Canal Road']</data>
   <data key="d11">secondary</data>
   <data key="d8">False</data>
   <data key="d13">214.75599999999997</data>
@@ -1304,7 +1304,7 @@
 </edge>
 <edge source="6305278640" target="6989116503" id="0">
   <data key="d7">[121070865, 140121931]</data>
-  <data key="d11">['secondary', 'residential']</data>
+  <data key="d11">['residential', 'secondary']</data>
   <data key="d8">False</data>
   <data key="d13">114.57</data>
   <data key="d10">East Boring Canal Road</data>
@@ -1470,7 +1470,7 @@
 <edge source="6989116503" target="6305278640" id="0">
   <data key="d7">[121070865, 140121931]</data>
   <data key="d10">East Boring Canal Road</data>
-  <data key="d11">['secondary', 'residential']</data>
+  <data key="d11">['residential', 'secondary']</data>
   <data key="d8">False</data>
   <data key="d13">114.57</data>
   <data key="d15">LINESTRING (85.1189546 25.6125217, 85.119116 25.6128207, 85.1198785 25.6127016)</data>
@@ -1739,7 +1739,7 @@
 </edge>
 <edge source="7203532072" target="1535148784" id="0">
   <data key="d7">[1065482352, 121070865, 140114355]</data>
-  <data key="d10">['West Boring Canal Road', 'East Boring Canal Road']</data>
+  <data key="d10">['East Boring Canal Road', 'West Boring Canal Road']</data>
   <data key="d11">secondary</data>
   <data key="d8">False</data>
   <data key="d13">214.75599999999997</data>

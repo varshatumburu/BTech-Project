@@ -118,9 +118,47 @@ cs_input_dropdown = dbc.FormGroup(
     row=True,
 )
 
-
 cs_schedule_form = dbc.Form([cs_input_dropdown])
 
+new_request_labels = dbc.FormGroup([
+    dbc.Label("Select request node", html_for="nid", width=3),
+    dbc.Label("Required charging time (in mins)", html_for="dur", width=2),
+    dbc.Label("Enter start time of availability", html_for="stime", width=2),
+    dbc.Label("Enter end time of availability", html_for="etime", width=2),
+])
+
+new_request_children = dbc.FormGroup(
+    [
+        dbc.Col(
+            dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="req_node_input"),
+            width=3,
+        ),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="duration_input", placeholder="duration",min=0, step=10, max=1440, value=10
+            ),
+            width=2,
+        ),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="start_time_input", placeholder="start time",min=0, step=10, max=1440, value=600
+            ),
+            width=2,
+        ),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="end_time_input", placeholder="end time",min=0, step=10, max=1440, value=700
+            ),
+            width=2,
+        ),
+        dbc.Col(
+            dbc.Spinner(children=[dbc.Button("Schedule", id="schedule_button", color="primary")], size="sm", color="primary", id="spinner3"),
+            width=3,
+        )
+    ],
+    row = True,
+)
+new_request_form = dbc.Form([new_request_labels,new_request_children])
 
 # deals with auto complete input location
 @app.callback(
@@ -377,12 +415,18 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
     Output('req_tbl','data'),
     Output('req_tbl', 'columns'),
     Output('cs_input_dd','options'),
+    Output('req_node_input', 'options'),
     Input('er_all_nodes_button', 'n_clicks'),
+    Input('schedule_button', 'n_clicks'),
+    State('req_node_input', 'value'),
+    State('duration_input','value'),
+    State('start_time_input','value'),
+    State('end_time_input','value'),
     State('er_location_input', 'value'),
     State('er_radius_input', 'value'),
     State('er_no_of_cs_input', 'value'),
 )
-def hp_update_map(n_clicks, location, radius, number_of_cs):
+def hp_update_map(n_clicks, sched_clicks, req_nodeid, dur, stime, etime, location, radius, number_of_cs):
 
     if n_clicks is None:
         raise PreventUpdate
@@ -394,7 +438,7 @@ def hp_update_map(n_clicks, location, radius, number_of_cs):
     #         return dash.no_update, dash.no_update, dash.no_update, center, zoomLevel
 
 
-    global Xnode, Ynode, G1
+    global Xnode, Ynode, G1, requests_df
     fig, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, latitude, longitude = find_all_nodes(location, radius)
     
 
@@ -444,9 +488,9 @@ def hp_update_map(n_clicks, location, radius, number_of_cs):
         riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
             for i in config.cs_nodes]
 
-    dropdown_content = [[f"Cs Node{i}",f"Node{i}"] for i in config.cs_nodes]
-    dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
-    config.cs_dropdown = dropdown
+    req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.cs_nodes]
+    req_dropdown = pd.DataFrame(req_node_content,columns = ['label','value'])
+    config.req_dropdown = req_dropdown
 
     # setting the global variables in config file
     config.num_of_tot_nodes, config.positions, config.polygon, config.center, config.zoomLevel = num_of_tot_nodes, positions, polygon,center, zoomLevel
@@ -465,7 +509,19 @@ def hp_update_map(n_clicks, location, radius, number_of_cs):
     dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
     config.cs_dropdown = dropdown
 
-    return positions,reqpositions,config.cs_positions,polygon ,center, zoomLevel, requests_df.to_dict("records"), cols, config.cs_dropdown.to_dict('records')
+    if sched_clicks is not None:
+        new_idx = max(requests_df['index'])+1
+        new_request = pd.DataFrame({
+            "index": new_idx,
+            "rcharge": 0,
+			"duration": dur,
+			"start_time": stime,
+			"end_time": etime,
+			"node": req_nodeid
+        }, index=[0])
+        requests_df = pd.concat([new_request, requests_df[:]]).drop_duplicates().reset_index(drop=True)
+
+    return positions,reqpositions,config.cs_positions,polygon ,center, zoomLevel, requests_df.to_dict("records"), cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records')
 
     # return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 from scheduler import SLOT_TIME
@@ -494,6 +550,7 @@ def show_schedule(n_clicks, cs_input):
     schedule = pd.DataFrame(table_data, columns=['Request Index','Time','Duration (in mins)'])
     cols = [{"name": i, "id": i} for i in schedule.columns]
     return schedule.to_dict("records"), cols
+
 
 app.layout = dbc.Container([
 	Navbar(),
@@ -527,7 +584,8 @@ app.layout = dbc.Container([
         # style_table={'overflowX': 'scroll'},
         style_as_list_view=True,
         style_cell={'textAlign': 'center'},
-        style_header={'backgroundColor': 'white','fontWeight': 'bold'})
+        style_header={'backgroundColor': 'white','fontWeight': 'bold'}, 
+        page_size=5)
     ]),
     html.Br(),
     dbc.Row([
@@ -542,7 +600,10 @@ app.layout = dbc.Container([
             style_cell={'textAlign': 'center'},
             style_header={'backgroundColor': 'white','fontWeight': 'bold'}
         )
-    ])
+    ]),
+    html.Br(),
+    html.Br(),
+    dbc.Row([dbc.Col(new_request_form)])
 ])
 
 if __name__ == "__main__":

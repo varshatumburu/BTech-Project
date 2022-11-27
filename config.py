@@ -7,6 +7,7 @@ num_of_cs = 0
 cs_positions = []
 cs_selected_positions = []
 cs_dropdown = pd.DataFrame(columns = ['label','value'])
+req_dropdown = pd.DataFrame(columns = ['label','value'])
 cs_nodes = []
 cs_selected_nodes = []
 num_of_ev = 0
@@ -22,3 +23,4 @@ table_of_ev_inputs = pd.DataFrame(columns = ['label','value','title'])
 path_inputs = pd.DataFrame(columns = ['label','value'])
 location = None
 slotMapping = {}
+requests = {}
