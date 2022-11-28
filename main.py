@@ -46,7 +46,7 @@ location_input = dbc.FormGroup(
         dbc.Label("Search Area", html_for="location", width=4),
         dbc.Col(
             dbc.Input(
-                type="text", id="er_location_input", placeholder="Enter a valid location",value="Patna, Bihar, India",debounce=False, disabled=True
+                type="text", id="er_location_input", placeholder="Enter a valid location",value="Patna, Bihar, India",debounce=False
             ),
             width=8,
         ),
@@ -76,7 +76,7 @@ radius_input = dbc.FormGroup(
         dbc.Label("Radius (m)", html_for="radius", width=4),
         dbc.Col(
             dbc.Input(
-                type="number", id="er_radius_input", placeholder="Enter Radius between [500,8000] meters",min=100, step=1,max=8000, value=500, disabled=True
+                type="number", id="er_radius_input", placeholder="Enter Radius between [500,8000] meters",min=100, step=1,max=8000, value=500
             ),
             width=8,
         ),
@@ -91,7 +91,7 @@ total_number_cs = dbc.FormGroup(
         dbc.Label("Number of CS:", html_for="no_of_cs", width=4),
         dbc.Col(
             dbc.Input(
-                type="number", id="er_no_of_cs_input", placeholder="Enter total no of cs",min=1, step=1,max=10, value=10, disabled=True
+                type="number", id="er_no_of_cs_input", placeholder="Enter total no of cs",min=1, step=1,max=50, value=10
             ),
             width=8,
         ),
@@ -242,12 +242,11 @@ def get_all_nodes(latitude,longitude,radius):
     ox.save_graphml(G1, filepath='network1.graphml')
     nodes, edges = ox.graph_to_gdfs(G1, nodes=True, edges=True)
 
-    print(f"location used: {location_point}")
-    print("node data:")
+    # print(f"location used: {location_point}")
+    # print("node data:")
 
     global Oid
     Oid=pd.Series.tolist(nodes.index)
-    print(nodes.dtypes) 
     
     Ynode=pd.Series.tolist(nodes.y)
     Xnode=pd.Series.tolist(nodes.x)
@@ -273,7 +272,7 @@ def get_all_nodes(latitude,longitude,radius):
     return len(G1.nodes), G1, A, Xnode, Ynode
 
 # finds nodes based on search location and radius
-def find_all_nodes(search_location, radius):
+def find_all_nodes(search_location, radius, num_of_cs):
     
     parsed_loc = urllib.parse.quote(search_location)
     response = requests.get("http://api.mapbox.com/geocoding/v5/mapbox.places/"+parsed_loc+".json?country=IN&access_token=pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g")
@@ -293,7 +292,7 @@ def find_all_nodes(search_location, radius):
         lon=Xnode,
         mode='markers',
         marker=go.scattermapbox.Marker(
-            size=10
+            size=num_of_cs
         ),
         text=[search_location],
     ))
@@ -439,8 +438,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         raise PreventUpdate
 
     global Xnode, Ynode, G1, requests_df
-    fig, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, latitude, longitude = find_all_nodes(location, radius)
-
+    fig, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, latitude, longitude = find_all_nodes(location, radius, number_of_cs)
+    
     if n_clicks>config.n_clicks:
         config.n_clicks = n_clicks
         testcases = []
@@ -637,4 +636,4 @@ app.layout = dbc.Container([
 ])
 
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8002)
+    app.run_server(host='172.16.26.67', port=8053)
