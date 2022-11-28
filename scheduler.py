@@ -1,12 +1,8 @@
 # weighted job scheduling
-import json 
 from functools import total_ordering
-import datetime
 import math
 
 SLOT_TIME = 10
-# requests = json.load(open('requests.json'))
-# stations = json.load(open('charging_stations.json'))
 
 @total_ordering
 class Job:
@@ -24,9 +20,6 @@ class Job:
 
 
 def optimalNonConflict(arr, i, vis , sorted_list):
-	# for j in range(i-1, -1, -1):
-	# 	if(arr[j].end <= arr[i].start and (arr[i].index not in vis[j])):
-	# 		return j
 	for j in sorted_list:
 		if(arr[j[2]].end <= arr[i].start and (arr[i].index not in vis[j[2]])):
 			return j[2]
@@ -65,8 +58,6 @@ def optimize(jobs):
 			vis[i]=vis[l].copy()
 			used[i]=used[l].copy()
 
-		# print(i,dur)
-
 		total_time[i]=dur
 		vis[i].add(jobs[i].index)
 		used[i].append(i)
@@ -100,16 +91,6 @@ def prebooked_scheduling(requests):
 	used_intervals=[]
 	if len(permuted_jobs)!=0:
 		used_intervals = optimize(permuted_jobs)
-
-	# selected_jobs = dict()
-	# time_mapping = dict()
-	# print("Slot Time =", SLOT_TIME, "mins")
-	# for interval in used_intervals:
-	# 	# selected_jobs[permuted_jobs[interval].index]=permuted_jobs[interval]
-	# 	for i in range(permuted_jobs[interval].start, permuted_jobs[interval].start + permuted_jobs[interval].duration, SLOT_TIME):
-	# 		time_mapping[i]=permuted_jobs[interval].index
-	# 	time = datetime.time(permuted_jobs[interval].start//60, permuted_jobs[interval].start%60)
-	# 	print(f"Request {permuted_jobs[interval].index} scheduled at {time} for {permuted_jobs[interval].duration} mins.")
 
 	scheduled_job_indices = [permuted_jobs[interval].index for interval in used_intervals]
 	return scheduled_job_indices

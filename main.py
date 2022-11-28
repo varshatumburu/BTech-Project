@@ -437,18 +437,12 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 
     if n_clicks is None:
         raise PreventUpdate
-    #     if config.num_of_tot_nodes != 0:
-    #         return config.positions,config.cs_positions, config.polygon,config.center, config.zoomLevel
-
-    #     if n_clicks is None:
-    #         fig, center, zoomLevel = default_location()    
-    #         return dash.no_update, dash.no_update, dash.no_update, center, zoomLevel
-
 
     global Xnode, Ynode, G1, requests_df
     fig, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, latitude, longitude = find_all_nodes(location, radius)
 
-    if n_clicks is not None:
+    if n_clicks>config.n_clicks:
+        config.n_clicks = n_clicks
         testcases = []
         corners = []
         for x in range(0,361,1):
@@ -475,10 +469,11 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             reqpositions.append(dl.Marker(position=[y,x],children=dl.Tooltip(request_index, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
             nearest_cs[request_index]=get_nearest_cs_pq(x,y)
         
+        config.nearest_cs = nearest_cs
 
-        requestMapping = mapRequests2Stations(len(requests_df),nearest_cs)
+        config.requestMapping = mapRequests2Stations(len(requests_df),nearest_cs)
         blocked=set(); leftover=[]
-        iterative_scheduling(len(requests_df),blocked,leftover,requestMapping,nearest_cs)
+        iterative_scheduling(len(requests_df),blocked,leftover,config.requestMapping,nearest_cs)
 
         config.cs_positions = [dl.Marker(position=[Ynode[i],Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
@@ -489,32 +484,33 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         config.req_dropdown = req_dropdown
 
         # setting the global variables in config file
-        config.num_of_tot_nodes, config.positions, config.polygon, config.center, config.zoomLevel = num_of_tot_nodes, positions, polygon,center, zoomLevel
+        config.num_of_tot_nodes, config.positions, config.reqpositions ,config.polygon, config.center, config.zoomLevel = num_of_tot_nodes, positions, reqpositions, polygon, center, zoomLevel, 
 
         requests_df['node'] = request_nodes
 
-        cols = [{"name": i, "id": i} for i in requests_df.columns]
+        config.cols = [{"name": i, "id": i} for i in requests_df.columns]
 
         dropdown_content = [[f"CS #{i}",f"{i}"] for i in config.cs_nodes]
         dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
         config.cs_dropdown = dropdown
 
     alert_message=""; alert_open=False; alert_color = "primary"
-    if sched_clicks is not None:
+    if sched_clicks and sched_clicks>config.sched_clicks:
         new_idx = max(requests_df['index'])+1
+        duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
         new_request = pd.DataFrame({
             "index": new_idx,
             "rcharge": 0,
-			"duration": int(duration),
-			"start_time": int(stime),
-			"end_time": int(etime),
-			"node": int(req_nodeid)
+			"duration": duration,
+			"start_time": stime,
+			"end_time": etime,
+			"node": req_nodeid
         }, index=[0])
-        duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
+        
         requests_df = pd.concat([new_request, requests_df[:]]).drop_duplicates().reset_index(drop=True)
 
-        reqpositions.append(dl.Marker(position=[Ynode[req_nodeid],Xnode[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-        nearest_cs[new_idx] = get_nearest_cs_pq(Xnode[req_nodeid], Ynode[req_nodeid])
+        config.reqpositions.append(dl.Marker(position=[Ynode[req_nodeid],Xnode[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
+        config.nearest_cs[new_idx] = get_nearest_cs_pq(Xnode[req_nodeid], Ynode[req_nodeid])
 
         st = roundup(stime)
         nslots = int(math.ceil(duration/SLOT_TIME))
@@ -525,14 +521,15 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             st+=SLOT_TIME
 
         flag=0
-        while not nearest_cs[new_idx].empty():
-            station = nearest_cs[new_idx].get()[1]
+        while not config.nearest_cs[new_idx].empty():
+
+            station = config.nearest_cs[new_idx].get()[1]
             if(matching.graphs.get(station)==None):
                 matching.graphs[station]=dict()
             matching.graphs[station][new_idx] = matchedSlots
-            if(requestMapping.get(station)==None):
-                requestMapping[station]=[]
-            requestMapping[station].append(new_idx)
+            if(config.requestMapping.get(station)==None):
+                config.requestMapping[station]=[]
+            config.requestMapping[station].append(new_idx)
 
             matching.used.clear()
             if(config.slotMapping.get(station)==None): 
@@ -545,7 +542,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
                 flag=1
                 break
             else:
-                requestMapping[station].remove(new_idx)
+                config.requestMapping[station].remove(new_idx)
                 del matching.graphs[station][new_idx]
 
         if(flag==0): 
@@ -553,7 +550,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
 
     config.requests = requests_df.to_dict('records')
-    return positions,reqpositions,config.cs_positions,polygon ,center, zoomLevel, config.requests, cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
+    return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests, config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
 
     # return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 from scheduler import SLOT_TIME

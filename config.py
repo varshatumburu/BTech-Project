@@ -24,3 +24,9 @@ path_inputs = pd.DataFrame(columns = ['label','value'])
 location = None
 slotMapping = {}
 requests = {}
+n_clicks = 0
+sched_clicks = 0
+reqpositions = []
+nearest_cs = dict()
+requestMapping = dict()
+cols = []
