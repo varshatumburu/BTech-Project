@@ -1,159 +1,24 @@
 import dash, config, requests, urllib.parse
-from dash import Dash, dcc, html, Input, Output, State, dash_table
+from dash import Dash, html, Input, Output, State, dash_table
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
-import plotly.express as px
 from geopy.geocoders import Nominatim
 from navbar import Navbar
 import dash_leaflet as dl
-import plotly.graph_objects as go
-import osmnx as ox
-from math import asin,cos,pi,sin
 from dash.exceptions import PreventUpdate
 import pandas as pd
-import networkx as nx
-from queue import PriorityQueue
-import matching
+import matching, layout, helper
 import datetime
 import math
+from scheduler import SLOT_TIME
+import random
 
 mapbox_access_token = "pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g"
 geolocator = Nominatim(user_agent="Slot Scheduling App")
-location = geolocator.geocode("India")
-Oid = []
-input_ev_locations = []
-Xnode = []
-Ynode = []
-paths = []
-path_nodes = []
-optimal_paths = []
-optimal_path_nodes = []
-optimal_paths_info = []
-G1 = None
-algo_input = {}
-path_id = None
-distances = []
-slotMapping = dict()
-
-def roundup(x):
-    return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
-requests_df = pd.read_json("requests.json")
+
 Search_Region=[22.59372606392931, 78.57421875000001]
-location_input = dbc.FormGroup(
-    [
-        dbc.Label("Search Area", html_for="location", width=4),
-        dbc.Col(
-            dbc.Input(
-                type="text", id="er_location_input", placeholder="Enter a valid location",value="Patna, Bihar, India",debounce=False
-            ),
-            width=8,
-        ),
-    ],
-    row=True,
-    id="er_location_input_form"
-)
-
-# autocomplete list
-autocomplete_list_ecorouting = dbc.Row(
-    [
-         dbc.Col(width=4),
-         dbc.Col(
-            dbc.ListGroup(
-            [],
-            id="er_autocomplete_list",
-            style={"margin-bottom":"8px"}
-            ),
-            width=8
-        )
-    ]
-)
-
-# radius input
-radius_input = dbc.FormGroup(
-    [
-        dbc.Label("Radius (m)", html_for="radius", width=4),
-        dbc.Col(
-            dbc.Input(
-                type="number", id="er_radius_input", placeholder="Enter Radius between [500,8000] meters",min=100, step=1,max=8000, value=500
-            ),
-            width=8,
-        ),
-    ],
-    row=True,
-    id="er_radius_input_form"
-)
-
-# total cs input
-total_number_cs = dbc.FormGroup(
-    [
-        dbc.Label("Number of CS:", html_for="no_of_cs", width=4),
-        dbc.Col(
-            dbc.Input(
-                type="number", id="er_no_of_cs_input", placeholder="Enter total no of cs",min=1, step=1,max=50, value=10
-            ),
-            width=8,
-        ),
-    ],
-    row=True,
-)
-
-all_nodes_button = dbc.Spinner(children=[dbc.Button("Find All Nodes",id="er_all_nodes_button",color="primary")],size="sm", color="primary",id="spinner1")
-
-all_nodes_form = dbc.Form([location_input,autocomplete_list_ecorouting, radius_input, total_number_cs, all_nodes_button])
-
-# cs dropdown list
-cs_input_dropdown = dbc.FormGroup(
-    [
-        dbc.Label("Display Schedule for Charging Station:", html_for="no_of_cs", width=4),
-        dbc.Col(
-            dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="cs_input_dd"),
-            width=4,
-        ),
-        dbc.Col(
-            dbc.Spinner(children=[dbc.Button("Search", id="all_cs_button", color="primary")], size="sm", color="primary", id="spinner2"),
-            width=4,
-        )
-    ],
-    row=True,
-)
-
-cs_schedule_form = dbc.Form([cs_input_dropdown])
-
-new_request_labels = dbc.FormGroup([
-    dbc.Label("Select request location (Node ID)", html_for="nid", width=3),
-    dbc.Label("Required charging time (in mins)", html_for="dur", width=2),
-    dbc.Label("Enter start time of availability", html_for="stime", width=2),
-    dbc.Label("Enter end time of availability", html_for="etime", width=2),
-])
-
-new_request_children = dbc.FormGroup(
-    [
-        dbc.Col(
-            dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="req_node_input"),
-            width=3,
-        ),
-        dbc.Col(
-            dbc.Input(type="number", id="duration_input", placeholder="duration",min=0, step=10, max=1440, value=10),
-            width=2,
-        ),
-        dbc.Col(
-            dbc.Input(type="number", id="start_time_input", placeholder="start time",min=0, step=10, max=1440, value=600),
-            width=2,
-        ),
-        dbc.Col(
-            dbc.Input(type="number", id="end_time_input", placeholder="end time",min=0, step=10, max=1440, value=700),
-            width=2,
-        ),
-        dbc.Col(
-            dbc.Spinner(children=[dbc.Button("Schedule", id="schedule_button", color="primary")], size="sm", color="primary", id="spinner3"),
-            width=3,
-        )
-    ],
-    row = True,
-)
-new_request_form = dbc.Form([new_request_labels,new_request_children])
 
 # deals with auto complete input location
 @app.callback(
@@ -165,8 +30,8 @@ new_request_form = dbc.Form([new_request_labels,new_request_children])
 def update_location_text(place, chosen_item):
     ctx=dash.callback_context
     if not ctx.triggered:
-        if config.location is not None:
-            return dash.no_update, config.location
+        # if config.location is not None:
+        #     return dash.no_update, config.location
         return dash.no_update, dash.no_update
 
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -191,221 +56,6 @@ def update_location_text(place, chosen_item):
         loc=eval(ctx.triggered[0]['prop_id'].split('.')[0])['index']
         config.location = loc
         return [], loc
-
-def get_eco_zoom_level(radius):
-    level=17
-    p=1
-    while(p*100<radius):
-        p=p*2
-        level=level-1
-    return level
-
-#Function to form default intial map
-def default_location():
-    parsed_loc = urllib.parse.quote("India")
-    response = requests.get("http://api.mapbox.com/geocoding/v5/mapbox.places/"+parsed_loc+".json?country=IN&access_token=pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g")
-    res=response.json()
-    latitude=res["features"][0]["geometry"]["coordinates"][1]
-    longitude=res["features"][0]["geometry"]["coordinates"][0]
-    location = geolocator.geocode("India")
-    center=[]
-    center.append(latitude)
-    center.append(longitude)
-    zoomLevel = get_eco_zoom_level(500000)
-    fig = go.Figure(go.Scattermapbox(
-    lat=[location.latitude],
-    lon=[location.longitude]
-    ))
-    fig.update_layout(
-        hovermode='closest',
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            bearing=0,
-            center=go.layout.mapbox.Center(
-                lat=location.latitude,
-                lon=location.longitude
-            ),
-            pitch=0,
-            zoom=5,
-        )
-    )
-    fig.update_layout(mapbox_style="open-street-map")
-    return fig, center, zoomLevel
-
-
-# Function to get all the nodes from osmnx and writting those nodes to input file
-def get_all_nodes(latitude,longitude,radius):
-
-    location_point=(latitude,longitude)
-    global G1
-    G1 = ox.graph_from_point(location_point, dist=radius, simplify=True, network_type='drive', clean_periphery=False)
-    ox.save_graphml(G1, filepath='network1.graphml')
-    nodes, edges = ox.graph_to_gdfs(G1, nodes=True, edges=True)
-
-    # print(f"location used: {location_point}")
-    # print("node data:")
-
-    global Oid
-    Oid=pd.Series.tolist(nodes.index)
-    
-    Ynode=pd.Series.tolist(nodes.y)
-    Xnode=pd.Series.tolist(nodes.x)
-
-    A = nx.adjacency_matrix(G1,weight='length')
-   
-    B1=A.tocoo()
-    list1=B1.data
-    list2=B1.row
-    list3=B1.col
-
-    my_file = open('input_graph.txt', "w+")
-    my_file.write("%d \n" %len(G1.nodes))
-    my_file.write("%d \n" %len(list1))
-
-    for i in range(len(list1)):
-        my_file.write("%d " %(list2[i]))  
-        my_file.write("%d " %(list3[i]))  
-        my_file.write("%d \n" %int(list1[i])) 
-    
-    my_file.close()
-
-    return len(G1.nodes), G1, A, Xnode, Ynode
-
-# finds nodes based on search location and radius
-def find_all_nodes(search_location, radius, num_of_cs):
-    
-    parsed_loc = urllib.parse.quote(search_location)
-    response = requests.get("http://api.mapbox.com/geocoding/v5/mapbox.places/"+parsed_loc+".json?country=IN&access_token=pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g")
-    res=response.json()
-    lat_center=res["features"][0]["geometry"]["coordinates"][1]
-    long_center=res["features"][0]["geometry"]["coordinates"][0]
-    # print(search_location)
-    center = [lat_center,long_center]
-    zoomLevel = get_eco_zoom_level(radius)
-    global G1
-    num_of_tot_nodes, G1, A, Xnode, Ynode = get_all_nodes(lat_center,long_center,radius)
-    
-    # Preparing the map to display all the nodes got from Osmnx
-    all_nodes = go.Figure(go.Scattermapbox(
-        name='General nodes',
-        lat=Ynode,
-        lon=Xnode,
-        mode='markers',
-        marker=go.scattermapbox.Marker(
-            size=num_of_cs
-        ),
-        text=[search_location],
-    ))
-
-    all_nodes.update_layout(
-        hovermode='closest',
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            bearing=0,
-            center=go.layout.mapbox.Center(
-                lat=lat_center,
-                lon=long_center,
-            ),
-            pitch=0,
-            zoom=15
-        )
-    )
-    all_nodes.update_layout(mapbox_style="open-street-map")
-    
-    return all_nodes, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, lat_center, long_center
-
-rEarth = 6371.01 # Earth's average radius in km
-epsilon = 0.000001 # threshold for floating-point equality
-
-def deg2rad(angle):
-    return angle*pi/180
-
-
-def rad2deg(angle):
-    return angle*180/pi
-
-# Function to form polygon with 24 sides around the search space
-def pointRadialDistance(lat1, lon1, bearing, distance):
-    """
-    Return final coordinates (lat2,lon2) [in degrees] given initial coordinates
-    (lat1,lon1) [in degrees] and a bearing [in degrees] and distance [in km]
-    """
-    rlat1 = deg2rad(lat1)
-    rlon1 = deg2rad(lon1)
-    rbearing = deg2rad(bearing)
-    rdistance = distance / rEarth # normalize linear distance to radian angle
-
-    rlat = asin( sin(rlat1) * cos(rdistance) + cos(rlat1) * sin(rdistance) * cos(rbearing) )
-
-    if cos(rlat) == 0 or abs(cos(rlat)) < epsilon: # Endpoint a pole
-        rlon=rlon1
-    else:
-        rlon = ( (rlon1 - asin( sin(rbearing)* sin(rdistance) / cos(rlat) ) + pi ) % (2*pi) ) - pi
-
-    lat = rad2deg(rlat)
-    lon = rad2deg(rlon)
-    return (lat, lon)
-
-import random
-
-def mapRequests2Stations(nreq, nearest_cs):
-    reqMapping = dict()
-    for i in range(nreq):
-        st=-1
-        if not nearest_cs[i].empty():
-            st = nearest_cs[i].get()[1]
-            if reqMapping.get(st)==None or len(reqMapping[st])==0:
-                reqMapping[st]=[]
-
-        if(st!=-1): reqMapping[st].append(i)
-
-    return reqMapping
-
-def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
-    iter=0; prev=-1
-    while len(blocked)!=nreq and prev!=len(blocked):
-        print(f"\n>>> Iteration {iter} >>> ")
-        for st in list(reqMapping.keys()):
-            prev=len(blocked)
-            
-            # print(reqMapping[id])
-            reqidx = reqMapping[st]
-            if len(reqidx)==0: continue
-            print(f"\nSchedule for Station {st}:")
-            # new_additions = [i for i in leftover if i not in reqidx]
-            # reqidx.extend(new_additions)
-
-            selected, slotMapping[st] = matching.init_schedule(reqidx, st, dict())
-            leftover = list(set(reqidx)-set(selected))
-
-            # print(leftover)
-            for lr in leftover:
-                if not nearest_cs[lr].empty():
-                    next_nearest_station = nearest_cs[lr].get()[1]
-                    reqMapping[st].remove(lr)
-                    if reqMapping.get(next_nearest_station)==None or len(reqMapping[next_nearest_station])==0:
-                        reqMapping[next_nearest_station]=[]
-                    reqMapping[next_nearest_station].append(lr)
-
-            blocked = set(list(blocked)+list(selected))
-
-        if(prev==len(blocked)): break
-        iter+=1
-
-    config.slotMapping = slotMapping
-    print("\nCompleted scheduling!")
-
-def get_nearest_cs_pq(x, y):
-    q = PriorityQueue()
-    for j in config.cs_nodes: 
-        # n1, n2 nearest node to x, y in graph (estimation done from there)
-        [n1, n2] = ox.distance.nearest_nodes(G1,[x,Xnode[j]], [y,Ynode[j]])
-        try:
-            dist = nx.shortest_path_length(G1, n1, n2, weight='length')
-            q.put((dist,j))
-        except nx.exception.NetworkXNoPath:
-            continue
-    return q
 
 # Callback dealing with intial inputs(area and radius) and output(all nodes and polygon around the search space)
 @app.callback(
@@ -434,13 +84,16 @@ def get_nearest_cs_pq(x, y):
 )
 def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, location, radius, number_of_cs):
 
-    if n_clicks is None:
-        raise PreventUpdate
+    alert_message=""; alert_open=False; alert_color = "primary"
+    if config.G1 is None:
+        fig, config.center, config.zoomLevel = helper.default_location()
 
-    global Xnode, Ynode, G1, requests_df
-    fig, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, latitude, longitude = find_all_nodes(location, radius, number_of_cs)
+    if n_clicks is None:
+        return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests.to_dict('records'), config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
     
-    if n_clicks>config.n_clicks:
+    fig, num_of_tot_nodes, config.G1, A, config.Xnode, config.Ynode, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
+    if n_clicks and n_clicks>config.n_clicks:
+        requests_df = pd.read_json("requests.json")
         config.n_clicks = n_clicks
         testcases = []
         corners = []
@@ -448,7 +101,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             testcases.append((latitude,longitude,x,(radius+350)/1000))
         
         for lat1, lon1, bear, dist in testcases:
-            (lat,lon) = pointRadialDistance(lat1,lon1,bear,dist)
+            (lat,lon) = helper.pointRadialDistance(lat1,lon1,bear,dist)
             corners.append([lat,lon])
         polygon = dl.Polygon(positions=corners)
 
@@ -458,23 +111,20 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 
         request_nodes = random.sample([i for i in range(0,num_of_tot_nodes) if i not in config.cs_nodes],requests_df.shape[0])
         reqpositions = []; positions = []
-        for i in range(len(Xnode)):
-            positions.append(dl.Marker(position=[Ynode[i],Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
+        for i in range(len(config.Xnode)):
+            positions.append(dl.Marker(position=[config.Ynode[i],config.Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
 
-        nearest_cs = dict()
         for idx, nodeid in enumerate(request_nodes):
-            y=Ynode[nodeid]; x=Xnode[nodeid]
+            y=config.Ynode[nodeid]; x=config.Xnode[nodeid]
             request_index = requests_df.loc[requests_df.index[idx],'index']
             reqpositions.append(dl.Marker(position=[y,x],children=dl.Tooltip(request_index, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-            nearest_cs[request_index]=get_nearest_cs_pq(x,y)
-        
-        config.nearest_cs = nearest_cs
+            config.nearest_cs[request_index]=helper.get_nearest_cs_pq(x,y)
 
-        config.requestMapping = mapRequests2Stations(len(requests_df),nearest_cs)
+        config.requestMapping = helper.mapRequests2Stations(len(requests_df),config.nearest_cs)
         blocked=set(); leftover=[]
-        iterative_scheduling(len(requests_df),blocked,leftover,config.requestMapping,nearest_cs)
+        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.requestMapping,config.nearest_cs)
 
-        config.cs_positions = [dl.Marker(position=[Ynode[i],Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
+        config.cs_positions = [dl.Marker(position=[config.Ynode[i],config.Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
                 for i in config.cs_nodes]
 
@@ -492,10 +142,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         dropdown_content = [[f"CS #{i}",f"{i}"] for i in config.cs_nodes]
         dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
         config.cs_dropdown = dropdown
+        config.requests = requests_df
 
-    alert_message=""; alert_open=False; alert_color = "primary"
     if sched_clicks and sched_clicks>config.sched_clicks:
-        new_idx = max(requests_df['index'])+1
+        new_idx = max(config.requests['index'])+1
         duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
         new_request = pd.DataFrame({
             "index": new_idx,
@@ -506,12 +156,12 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 			"node": req_nodeid
         }, index=[0])
         
-        requests_df = pd.concat([new_request, requests_df[:]]).drop_duplicates().reset_index(drop=True)
+        config.requests = pd.concat([new_request, config.requests[:]]).drop_duplicates().reset_index(drop=True)
 
-        config.reqpositions.append(dl.Marker(position=[Ynode[req_nodeid],Xnode[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-        config.nearest_cs[new_idx] = get_nearest_cs_pq(Xnode[req_nodeid], Ynode[req_nodeid])
+        config.reqpositions.append(dl.Marker(position=[config.Ynode[req_nodeid],config.Xnode[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
+        config.nearest_cs[new_idx] = helper.get_nearest_cs_pq(config.Xnode[req_nodeid], config.Ynode[req_nodeid])
 
-        st = roundup(stime)
+        st = helper.roundup(stime)
         nslots = int(math.ceil(duration/SLOT_TIME))
         matching.reqSlots[new_idx]=nslots
         matchedSlots = []
@@ -548,11 +198,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             print("\n>>> REQUEST DENIED.")
             alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
 
-    config.requests = requests_df.to_dict('records')
-    return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests, config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
+    
+    return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests.to_dict('records'), config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
 
-    # return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-from scheduler import SLOT_TIME
+
 @app.callback(
     Output('cs_schedule','data'),
     Output('cs_schedule','columns'),
@@ -562,7 +211,7 @@ from scheduler import SLOT_TIME
 def show_schedule(n_clicks, cs_input):
     if n_clicks is None:
         raise PreventUpdate
-
+    
     if config.slotMapping.get(int(cs_input))==None:
         return [],[]
 
@@ -571,7 +220,7 @@ def show_schedule(n_clicks, cs_input):
         dup = config.slotMapping[int(cs_input)]
         if(dup[key] in check): continue
         check.append(dup[key])
-        dur = requests_df.loc[requests_df['index']==dup[key], 'duration'].iloc[0]
+        dur = config.requests.loc[config.requests['index']==dup[key], 'duration'].iloc[0]
         time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
         table_data.append([dup[key],time,dur])
 
@@ -600,13 +249,13 @@ app.layout = dbc.Container([
                 ]
               ) 
             ], id="er_result_map"), width=7),
-        dbc.Col(all_nodes_form, width=5), 
+        dbc.Col(layout.all_nodes_form, width=5), 
     ]),
     html.Br(),
     html.H3("Existing Requests"),
     html.Div([
         dash_table.DataTable(
-        data=requests_df.to_dict("records"), 
+        data=config.requests.to_dict("records"), 
         columns=[], 
         id="req_tbl",
         # style_table={'overflowX': 'scroll'},
@@ -617,7 +266,7 @@ app.layout = dbc.Container([
     ]),
     html.Br(),
     dbc.Row([
-        dbc.Col(cs_schedule_form),
+        dbc.Col(layout.cs_schedule_form),
     ]),
     html.Div([
         dash_table.DataTable(
@@ -631,9 +280,10 @@ app.layout = dbc.Container([
     ]),
     html.Br(),
     html.Br(),
-    dbc.Row([dbc.Col(new_request_form)]),
+    dbc.Row([dbc.Col(layout.new_request_form)]),
     dbc.Alert(id="schedule_alert", is_open=False)
 ])
 
 if __name__ == "__main__":
-    app.run_server(host='172.16.26.67', port=8053)
+    # app.run_server(host='172.16.26.67', port=8053)
+    app.run_server(host='127.0.0.1',debug=True, port=8002)

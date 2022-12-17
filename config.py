@@ -1,7 +1,8 @@
 # contains all the configurable variables to maintain state of user
 
 import pandas as pd
-
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="Slot Scheduling App")
 num_of_tot_nodes = 0
 num_of_cs = 0
 cs_positions = []
@@ -21,12 +22,16 @@ center = None
 zoomLevel = 0
 table_of_ev_inputs = pd.DataFrame(columns = ['label','value','title'])
 path_inputs = pd.DataFrame(columns = ['label','value'])
-location = None
+# location = None
+location = geolocator.geocode("India")
 slotMapping = {}
-requests = {}
+requests = pd.DataFrame()
 n_clicks = 0
 sched_clicks = 0
 reqpositions = []
 nearest_cs = dict()
 requestMapping = dict()
 cols = []
+Xnode = []
+Ynode = []
+G1 = None

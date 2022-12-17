@@ -1,5 +1,5 @@
 import dash, config, requests, urllib.parse
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, html, Input, Output, State
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -375,15 +375,7 @@ app.layout = dbc.Container([
             ], id="er_result_map"), width=7),
         dbc.Col(all_nodes_form, width=5), 
     ]),
-    # html.H3("Existing Requests"),
-    # dbc.Row()
-    # dbc.Row([
-    #     dbc.Col(day_dropdown, width=6),
-    #     dbc.Col(fake_dropdown, width=6)
-    # ]),
-    # dbc.Row([
-    #     dbc.Col(dcc.Graph(id="bar-chart"), width=12)
-    # ]),
+
 ])
 
 if __name__ == "__main__":
