@@ -2,7 +2,6 @@ import dash, config, requests, urllib.parse
 from dash import Dash, html, Input, Output, State, dash_table
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
-from geopy.geocoders import Nominatim
 from navbar import Navbar
 import dash_leaflet as dl
 from dash.exceptions import PreventUpdate
@@ -12,9 +11,6 @@ import datetime
 import math
 from scheduler import SLOT_TIME
 import random
-
-mapbox_access_token = "pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g"
-geolocator = Nominatim(user_agent="Slot Scheduling App")
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
 

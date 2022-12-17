@@ -3,6 +3,7 @@
 import pandas as pd
 from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="Slot Scheduling App")
+
 num_of_tot_nodes = 0
 num_of_cs = 0
 cs_positions = []

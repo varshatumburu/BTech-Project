@@ -8,6 +8,10 @@ from queue import PriorityQueue
 import matching, main
 import math
 from scheduler import SLOT_TIME
+from geopy.geocoders import Nominatim
+
+mapbox_access_token = "pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g"
+geolocator = Nominatim(user_agent="Slot Scheduling App")
 
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
@@ -27,11 +31,11 @@ def default_location():
     res=response.json()
     latitude=res["features"][0]["geometry"]["coordinates"][1]
     longitude=res["features"][0]["geometry"]["coordinates"][0]
-    location = main.geolocator.geocode("India")
+    location = geolocator.geocode("India")
     center=[]
     center.append(latitude)
     center.append(longitude)
-    zoomLevel = get_eco_zoom_level(500000)
+    zoomLevel = get_eco_zoom_level(250000)
     fig = go.Figure(go.Scattermapbox(
     lat=[location.latitude],
     lon=[location.longitude]
@@ -39,7 +43,7 @@ def default_location():
     fig.update_layout(
         hovermode='closest',
         mapbox=dict(
-            accesstoken=main.mapbox_access_token,
+            accesstoken=mapbox_access_token,
             bearing=0,
             center=go.layout.mapbox.Center(
                 lat=location.latitude,
@@ -117,7 +121,7 @@ def find_all_nodes(search_location, radius, num_of_cs):
     all_nodes.update_layout(
         hovermode='closest',
         mapbox=dict(
-            accesstoken=main.mapbox_access_token,
+            accesstoken=mapbox_access_token,
             bearing=0,
             center=go.layout.mapbox.Center(
                 lat=lat_center,
