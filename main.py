@@ -89,7 +89,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
     
     fig, num_of_tot_nodes, config.G1, A, config.Xnode, config.Ynode, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.n_clicks:
-        requests_df = pd.read_json("requests.json")
+        requests_df = pd.read_json(config.DATASET)
+        print(requests_df.columns)
         config.n_clicks = n_clicks
         testcases = []
         corners = []
@@ -221,6 +222,7 @@ def show_schedule(n_clicks, cs_input):
         table_data.append([dup[key],time,dur])
 
     schedule = pd.DataFrame(table_data, columns=['Request Index','Time','Duration (in mins)'])
+    schedule = schedule.sort_values(by=['Time'])
     cols = [{"name": i, "id": i} for i in schedule.columns]
     return schedule.to_dict("records"), cols
 
@@ -232,7 +234,7 @@ app.layout = dbc.Container([
     html.Br(),
     dbc.Row([
         dbc.Col(dl.Map(style={'width': '100%', 'height': '50vh', 'margin': "auto", "display": "block"},
-            center=Search_Region,
+            center=[config.location.latitude, config.location.longitude],
             zoom=5,
             children=[
                 dl.LayersControl(

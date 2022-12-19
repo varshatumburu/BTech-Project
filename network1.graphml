@@ -16,7 +16,7 @@
 <key id="d2" for="graph" attr.name="crs" attr.type="string"/>
 <key id="d1" for="graph" attr.name="created_with" attr.type="string"/>
 <key id="d0" for="graph" attr.name="created_date" attr.type="string"/>
-<graph edgedefault="directed"><data key="d0">2022-12-17 13:51:26</data>
+<graph edgedefault="directed"><data key="d0">2022-12-19 11:34:01</data>
 <data key="d1">OSMnx 1.1.2</data>
 <data key="d2">epsg:4326</data>
 <data key="d3">True</data>
@@ -1304,7 +1304,7 @@
 </edge>
 <edge source="6305278640" target="6989116503" id="0">
   <data key="d7">[121070865, 140121931]</data>
-  <data key="d11">['secondary', 'residential']</data>
+  <data key="d11">['residential', 'secondary']</data>
   <data key="d8">False</data>
   <data key="d13">114.57</data>
   <data key="d10">East Boring Canal Road</data>
@@ -1470,7 +1470,7 @@
 <edge source="6989116503" target="6305278640" id="0">
   <data key="d7">[121070865, 140121931]</data>
   <data key="d10">East Boring Canal Road</data>
-  <data key="d11">['secondary', 'residential']</data>
+  <data key="d11">['residential', 'secondary']</data>
   <data key="d8">False</data>
   <data key="d13">114.57</data>
   <data key="d15">LINESTRING (85.1189546 25.6125217, 85.119116 25.6128207, 85.1198785 25.6127016)</data>

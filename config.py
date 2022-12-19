@@ -36,3 +36,4 @@ cols = []
 Xnode = []
 Ynode = []
 G1 = None
+DATASET = 'datasets/sample.json'

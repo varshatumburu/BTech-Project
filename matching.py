@@ -1,7 +1,7 @@
-import json, datetime, math
+import json, datetime, math, config
 from scheduler import prebooked_scheduling, SLOT_TIME
 
-global_requests = json.load(open('requests.json'))
+global_requests = json.load(open(config.DATASET))
 
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)

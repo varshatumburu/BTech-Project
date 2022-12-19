@@ -59,8 +59,8 @@ def iterative_scheduling(blocked, leftover, reqMapping):
 	print("\nCompleted scheduling!")
 
 if __name__=="__main__":
-	stations = json.load(open('charging_stations.json'))
-	requests = json.load(open('requests.json'))	
+	stations = json.load(open('datasets/charging_stations.json'))
+	requests = json.load(open('datasets/requests.json'))	
 
 	calcStationDistances(requests, stations)
 	requestMapping = createMapping()
