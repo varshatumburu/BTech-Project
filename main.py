@@ -50,7 +50,7 @@ def update_location_text(place, chosen_item):
         return autocomplete_list, dash.no_update
     else:
         loc=eval(ctx.triggered[0]['prop_id'].split('.')[0])['index']
-        config.location = loc
+        config.LOCATION = loc
         return [], loc
 
 # Callback dealing with intial inputs(area and radius) and output(all nodes and polygon around the search space)
@@ -81,17 +81,17 @@ def update_location_text(place, chosen_item):
 def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, location, radius, number_of_cs):
 
     alert_message=""; alert_open=False; alert_color = "primary"
-    if config.G1 is None:
-        fig, config.center, config.zoomLevel = helper.default_location()
+    if config.GRAPH is None:
+        fig, config.CENTER, config.ZOOM_LEVEL = helper.default_location()
 
     if n_clicks is None:
-        return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests.to_dict('records'), config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
+        return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
     
-    fig, num_of_tot_nodes, config.G1, A, config.Xnode, config.Ynode, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
-    if n_clicks and n_clicks>config.n_clicks:
+    fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
+    if n_clicks and n_clicks>config.N_CLICKS:
         requests_df = pd.read_json(config.DATASET)
         print(requests_df.columns)
-        config.n_clicks = n_clicks
+        config.N_CLICKS = n_clicks
         testcases = []
         corners = []
         for x in range(0,361,1):
@@ -103,46 +103,45 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         polygon = dl.Polygon(positions=corners)
 
         # info related to cs
-        config.num_of_cs = number_of_cs
-        config.cs_nodes = random.sample(range(0,num_of_tot_nodes),number_of_cs)
+        config.TOTAL_STATIONS = number_of_cs
+        config.CS_NODES = random.sample(range(0,num_of_tot_nodes),number_of_cs)
 
-        request_nodes = random.sample([i for i in range(0,num_of_tot_nodes) if i not in config.cs_nodes],requests_df.shape[0])
+        request_nodes = random.sample([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],requests_df.shape[0])
         reqpositions = []; positions = []
-        for i in range(len(config.Xnode)):
-            positions.append(dl.Marker(position=[config.Ynode[i],config.Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
+        for i in range(len(config.X_NODES)):
+            positions.append(dl.Marker(position=[config.Y_NODES[i],config.X_NODES[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
 
         for idx, nodeid in enumerate(request_nodes):
-            y=config.Ynode[nodeid]; x=config.Xnode[nodeid]
+            y=config.Y_NODES[nodeid]; x=config.X_NODES[nodeid]
             request_index = requests_df.loc[requests_df.index[idx],'index']
             reqpositions.append(dl.Marker(position=[y,x],children=dl.Tooltip(request_index, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-            config.nearest_cs[request_index]=helper.get_nearest_cs_pq(x,y)
+            config.NEAREST_CS[request_index]=helper.get_nearest_cs_pq(x,y)
 
-        config.requestMapping = helper.mapRequests2Stations(len(requests_df),config.nearest_cs)
+        config.REQUEST_MAPPING = helper.mapRequests2Stations(len(requests_df),config.NEAREST_CS)
         blocked=set(); leftover=[]
-        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.requestMapping,config.nearest_cs)
+        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.REQUEST_MAPPING,config.NEAREST_CS)
 
-        config.cs_positions = [dl.Marker(position=[config.Ynode[i],config.Xnode[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
+        config.CS_POSITIONS = [dl.Marker(position=[config.Y_NODES[i],config.X_NODES[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
-                for i in config.cs_nodes]
+                for i in config.CS_NODES]
 
-        req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.cs_nodes]
-        req_dropdown = pd.DataFrame(req_node_content,columns = ['label','value'])
-        config.req_dropdown = req_dropdown
+        req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.CS_NODES]
+        config.REQUESTS_DROPDOWN = pd.DataFrame(req_node_content,columns = ['label','value'])
 
         # setting the global variables in config file
-        config.num_of_tot_nodes, config.positions, config.reqpositions ,config.polygon, config.center, config.zoomLevel = num_of_tot_nodes, positions, reqpositions, polygon, center, zoomLevel, 
+        config.TOTAL_NODES, config.POSITIONS, config.REQUEST_NODES ,config.POLYGON, config.CENTER, config.ZOOM_LEVEL = num_of_tot_nodes, positions, reqpositions, polygon, center, zoomLevel, 
 
         requests_df['node'] = request_nodes
 
-        config.cols = [{"name": i, "id": i} for i in requests_df.columns]
+        config.COLUMNS = [{"name": i, "id": i} for i in requests_df.columns]
 
-        dropdown_content = [[f"CS #{i}",f"{i}"] for i in config.cs_nodes]
+        dropdown_content = [[f"CS #{i}",f"{i}"] for i in config.CS_NODES]
         dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
-        config.cs_dropdown = dropdown
-        config.requests = requests_df
+        config.CS_DROPDOWN = dropdown
+        config.REQUESTS = requests_df
 
-    if sched_clicks and sched_clicks>config.sched_clicks:
-        new_idx = max(config.requests['index'])+1
+    if sched_clicks and sched_clicks>config.SCHED_CLICKS:
+        new_idx = max(config.REQUESTS['index'])+1
         duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
         new_request = pd.DataFrame({
             "index": new_idx,
@@ -150,13 +149,15 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 			"duration": duration,
 			"start_time": stime,
 			"end_time": etime,
+            "Available from": str(datetime.time(int(stime)//60, int(stime)%60)),
+            "Available till": str(datetime.time(int(etime)//60, int(etime)%60)),
 			"node": req_nodeid
         }, index=[0])
         
-        config.requests = pd.concat([new_request, config.requests[:]]).drop_duplicates().reset_index(drop=True)
+        config.REQUESTS = pd.concat([new_request, config.REQUESTS[:]]).drop_duplicates().reset_index(drop=True)
 
-        config.reqpositions.append(dl.Marker(position=[config.Ynode[req_nodeid],config.Xnode[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-        config.nearest_cs[new_idx] = helper.get_nearest_cs_pq(config.Xnode[req_nodeid], config.Ynode[req_nodeid])
+        config.REQUEST_NODES.append(dl.Marker(position=[config.Y_NODES[req_nodeid],config.X_NODES[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
+        config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid])
 
         st = helper.roundup(stime)
         nslots = int(math.ceil(duration/SLOT_TIME))
@@ -167,20 +168,20 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             st+=SLOT_TIME
 
         flag=0
-        while not config.nearest_cs[new_idx].empty():
+        while not config.NEAREST_CS[new_idx].empty():
 
-            station = config.nearest_cs[new_idx].get()[1]
+            station = config.NEAREST_CS[new_idx].get()[1]
             if(matching.graphs.get(station)==None):
                 matching.graphs[station]=dict()
             matching.graphs[station][new_idx] = matchedSlots
-            if(config.requestMapping.get(station)==None):
-                config.requestMapping[station]=[]
-            config.requestMapping[station].append(new_idx)
+            if(config.REQUEST_MAPPING.get(station)==None):
+                config.REQUEST_MAPPING[station]=[]
+            config.REQUEST_MAPPING[station].append(new_idx)
 
             matching.used.clear()
-            if(config.slotMapping.get(station)==None): 
-                config.slotMapping[station]={}
-            if(matching.kuhn(new_idx, 0, config.slotMapping[station], station)):
+            if(config.SLOT_MAPPING.get(station)==None): 
+                config.SLOT_MAPPING[station]={}
+            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[station], station)):
                 print(f"\n>>> REQUEST ACCEPTED! Accommodated in Station {station}")
                 alert_message = f"Request Accepted -> Accommodated in Station {station}"
                 alert_open = True; alert_color="success"
@@ -188,7 +189,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
                 flag=1
                 break
             else:
-                config.requestMapping[station].remove(new_idx)
+                config.REQUEST_MAPPING[station].remove(new_idx)
                 del matching.graphs[station][new_idx]
 
         if(flag==0): 
@@ -196,7 +197,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
 
     
-    return config.positions,config.reqpositions,config.cs_positions, config.polygon , config.center, config.zoomLevel, config.requests.to_dict('records'), config.cols, config.cs_dropdown.to_dict('records'), config.req_dropdown.to_dict('records'), alert_message, alert_open, alert_color
+    return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
 
 
 @app.callback(
@@ -209,15 +210,15 @@ def show_schedule(n_clicks, cs_input):
     if n_clicks is None:
         raise PreventUpdate
     
-    if config.slotMapping.get(int(cs_input))==None:
+    if config.SLOT_MAPPING.get(int(cs_input))==None:
         return [],[]
 
     check=[]; table_data=[]
-    for key in config.slotMapping[int(cs_input)].keys():
-        dup = config.slotMapping[int(cs_input)]
+    for key in config.SLOT_MAPPING[int(cs_input)].keys():
+        dup = config.SLOT_MAPPING[int(cs_input)]
         if(dup[key] in check): continue
         check.append(dup[key])
-        dur = config.requests.loc[config.requests['index']==dup[key], 'duration'].iloc[0]
+        dur = config.REQUESTS.loc[config.REQUESTS['index']==dup[key], 'duration'].iloc[0]
         time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
         table_data.append([dup[key],time,dur])
 
@@ -234,7 +235,7 @@ app.layout = dbc.Container([
     html.Br(),
     dbc.Row([
         dbc.Col(dl.Map(style={'width': '100%', 'height': '50vh', 'margin': "auto", "display": "block"},
-            center=[config.location.latitude, config.location.longitude],
+            center=[config.LOCATION.latitude, config.LOCATION.longitude],
             zoom=5,
             children=[
                 dl.LayersControl(
@@ -253,7 +254,7 @@ app.layout = dbc.Container([
     html.H3("Existing Requests"),
     html.Div([
         dash_table.DataTable(
-        data=config.requests.to_dict("records"), 
+        data=config.REQUESTS.to_dict("records"), 
         columns=[], 
         id="req_tbl",
         # style_table={'overflowX': 'scroll'},

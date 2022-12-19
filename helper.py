@@ -61,10 +61,10 @@ def default_location():
 def get_all_nodes(latitude,longitude,radius):
 
     location_point=(latitude,longitude)
-    global G1
-    G1 = ox.graph_from_point(location_point, dist=radius, simplify=True, network_type='drive', clean_periphery=False)
-    ox.save_graphml(G1, filepath='network1.graphml')
-    nodes, edges = ox.graph_to_gdfs(G1, nodes=True, edges=True)
+    global GRAPH
+    GRAPH = ox.graph_from_point(location_point, dist=radius, simplify=True, network_type='drive', clean_periphery=False)
+    ox.save_graphml(GRAPH, filepath='network1.graphml')
+    nodes, edges = ox.graph_to_gdfs(GRAPH, nodes=True, edges=True)
 
     # print(f"location used: {location_point}")
     # print("node data:")
@@ -72,7 +72,7 @@ def get_all_nodes(latitude,longitude,radius):
     Ynode=pd.Series.tolist(nodes.y)
     Xnode=pd.Series.tolist(nodes.x)
 
-    A = nx.adjacency_matrix(G1,weight='length')
+    A = nx.adjacency_matrix(GRAPH,weight='length')
    
     B1=A.tocoo()
     list1=B1.data
@@ -80,7 +80,7 @@ def get_all_nodes(latitude,longitude,radius):
     list3=B1.col
 
     my_file = open('input_graph.txt', "w+")
-    my_file.write("%d \n" %len(G1.nodes))
+    my_file.write("%d \n" %len(GRAPH.nodes))
     my_file.write("%d \n" %len(list1))
 
     for i in range(len(list1)):
@@ -90,7 +90,7 @@ def get_all_nodes(latitude,longitude,radius):
     
     my_file.close()
 
-    return len(G1.nodes), G1, A, Xnode, Ynode
+    return len(GRAPH.nodes), GRAPH, A, Xnode, Ynode
 
 # finds nodes based on search location and radius
 def find_all_nodes(search_location, radius, num_of_cs):
@@ -103,8 +103,8 @@ def find_all_nodes(search_location, radius, num_of_cs):
     # print(search_location)
     center = [lat_center,long_center]
     zoomLevel = get_eco_zoom_level(radius)
-    global G1
-    num_of_tot_nodes, G1, A, Xnode, Ynode = get_all_nodes(lat_center,long_center,radius)
+    global GRAPH
+    num_of_tot_nodes, GRAPH, A, Xnode, Ynode = get_all_nodes(lat_center,long_center,radius)
     
     # Preparing the map to display all the nodes got from Osmnx
     all_nodes = go.Figure(go.Scattermapbox(
@@ -133,7 +133,7 @@ def find_all_nodes(search_location, radius, num_of_cs):
     )
     all_nodes.update_layout(mapbox_style="open-street-map")
     
-    return all_nodes, num_of_tot_nodes, G1, A, Xnode, Ynode, center, zoomLevel, lat_center, long_center
+    return all_nodes, num_of_tot_nodes, GRAPH, A, Xnode, Ynode, center, zoomLevel, lat_center, long_center
 
 rEarth = 6371.01 # Earth's average radius in km
 epsilon = 0.000001 # threshold for floating-point equality
@@ -191,13 +191,10 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
             reqidx = reqMapping[st]
             if len(reqidx)==0: continue
             print(f"\nSchedule for Station {st}:")
-            # new_additions = [i for i in leftover if i not in reqidx]
-            # reqidx.extend(new_additions)
 
-            selected, config.slotMapping[st] = matching.init_schedule(reqidx, st, dict())
+            selected, config.SLOT_MAPPING[st] = matching.init_schedule(reqidx, st, dict())
             leftover = list(set(reqidx)-set(selected))
 
-            # print(leftover)
             for lr in leftover:
                 if not nearest_cs[lr].empty():
                     next_nearest_station = nearest_cs[lr].get()[1]
@@ -215,11 +212,11 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
 
 def get_nearest_cs_pq(x, y):
     q = PriorityQueue()
-    for j in config.cs_nodes: 
+    for j in config.CS_NODES: 
         # n1, n2 nearest node to x, y in graph (estimation done from there)
-        [n1, n2] = ox.distance.nearest_nodes(config.G1,[x,config.Xnode[j]], [y,config.Ynode[j]])
+        [n1, n2] = ox.distance.nearest_nodes(config.GRAPH,[x,config.X_NODES[j]], [y,config.Y_NODES[j]])
         try:
-            dist = nx.shortest_path_length(config.G1, n1, n2, weight='length')
+            dist = nx.shortest_path_length(config.GRAPH, n1, n2, weight='length')
             q.put((dist,j))
         except nx.exception.NetworkXNoPath:
             continue

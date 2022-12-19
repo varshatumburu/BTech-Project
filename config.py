@@ -4,36 +4,26 @@ import pandas as pd
 from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="Slot Scheduling App")
 
-num_of_tot_nodes = 0
-num_of_cs = 0
-cs_positions = []
-cs_selected_positions = []
-cs_dropdown = pd.DataFrame(columns = ['label','value'])
-req_dropdown = pd.DataFrame(columns = ['label','value'])
-cs_nodes = []
-cs_selected_nodes = []
-num_of_ev = 0
-ev_options = None
-ev_dropdown = pd.DataFrame(columns = ['label','value','title'])
-ev_sdinput = pd.DataFrame(columns = ['vehicle_id','node_id'])
-positions = 0
-output_positions = {}
-polygon = []
-center = None
-zoomLevel = 0
-table_of_ev_inputs = pd.DataFrame(columns = ['label','value','title'])
-path_inputs = pd.DataFrame(columns = ['label','value'])
-# location = None
-location = geolocator.geocode("India")
-slotMapping = {}
-requests = pd.DataFrame()
-n_clicks = 0
-sched_clicks = 0
-reqpositions = []
-nearest_cs = dict()
-requestMapping = dict()
-cols = []
-Xnode = []
-Ynode = []
-G1 = None
+CENTER = None
+CS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
+CS_NODES = []
+CS_POSITIONS = []
+COLUMNS = []
 DATASET = 'datasets/sample.json'
+GRAPH = None
+LOCATION = geolocator.geocode("India")
+N_CLICKS = 0
+NEAREST_CS = dict()
+POLYGON = []
+POSITIONS = 0
+REQUESTS = pd.DataFrame()
+REQUESTS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
+REQUEST_MAPPING = dict()
+REQUEST_NODES = []
+SCHED_CLICKS = 0
+SLOT_MAPPING = {}
+TOTAL_NODES = 0
+TOTAL_STATIONS = 0
+X_NODES = []
+Y_NODES = []
+ZOOM_LEVEL = 0
