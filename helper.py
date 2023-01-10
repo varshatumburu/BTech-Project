@@ -62,7 +62,7 @@ def get_all_nodes(latitude,longitude,radius):
 
     location_point=(latitude,longitude)
     global GRAPH
-    GRAPH = ox.graph_from_point(location_point, dist=radius, simplify=True, network_type='drive', clean_periphery=False)
+    GRAPH = ox.graph_from_point(location_point, dist=radius, simplify=True, network_type='drive')
     ox.save_graphml(GRAPH, filepath='network1.graphml')
     nodes, edges = ox.graph_to_gdfs(GRAPH, nodes=True, edges=True)
 

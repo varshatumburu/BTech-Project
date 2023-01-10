@@ -1,5 +1,5 @@
 import dash, config, requests, urllib.parse
-from dash import Dash, html, Input, Output, State, dash_table
+from dash import Dash, html, Input, Output, State, dash_table, callback, dcc
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from navbar import Navbar
@@ -12,10 +12,10 @@ import math
 from scheduler import SLOT_TIME
 import random
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
+dash.register_page(__name__)
 
 # deals with auto complete input location
-@app.callback(
+@callback(
     [Output("er_autocomplete_list","children"),
      Output("er_location_input","value")],
     [Input("er_location_input", "value"),
@@ -52,7 +52,7 @@ def update_location_text(place, chosen_item):
         return [], loc
 
 # Callback dealing with intial inputs(area and radius) and output(all nodes and polygon around the search space)
-@app.callback(
+@callback(
     Output('dl_er_all_nodes','children'),
     Output('dl_er_req_nodes','children'),
     Output('dl_er_cs_nodes', 'children'),
@@ -62,29 +62,18 @@ def update_location_text(place, chosen_item):
     Output('req_tbl','data'),
     Output('req_tbl', 'columns'),
     Output('cs_input_dd','options'),
-    Output('req_node_input', 'options'),
-    Output('schedule_alert', 'children'),
-    Output('schedule_alert', 'is_open'),
-    Output('schedule_alert', 'color'),
     Input('er_all_nodes_button', 'n_clicks'),
-    Input('schedule_button', 'n_clicks'),
-    State('req_node_input', 'value'),
-    State('duration_input','value'),
-    State('start_time_input','value'),
-    State('end_time_input','value'),
     State('er_location_input', 'value'),
     State('er_radius_input', 'value'),
     State('er_no_of_cs_input', 'value'),
 )
-def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, location, radius, number_of_cs):
+def hp_update_map(n_clicks, location, radius, number_of_cs):
 
-    alert_message=""; alert_open=False; alert_color = "primary"
     if config.GRAPH is None:
         fig, config.CENTER, config.ZOOM_LEVEL = helper.default_location()
 
     if n_clicks is None:
-        return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
-    
+        return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records')
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
         requests_df = pd.read_json(config.DATASET)
@@ -122,8 +111,6 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
                 for i in config.CS_NODES]
 
-        req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.CS_NODES]
-        config.REQUESTS_DROPDOWN = pd.DataFrame(req_node_content,columns = ['label','value'])
 
         # setting the global variables in config file
         config.TOTAL_NODES, config.POSITIONS, config.REQUEST_NODES ,config.POLYGON, config.CENTER, config.ZOOM_LEVEL = num_of_tot_nodes, positions, reqpositions, polygon, center, zoomLevel, 
@@ -137,67 +124,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         config.CS_DROPDOWN = dropdown
         config.REQUESTS = requests_df
 
-    if sched_clicks and sched_clicks>config.SCHED_CLICKS:
-        new_idx = max(config.REQUESTS['index'])+1
-        duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
-        new_request = pd.DataFrame({
-            "index": new_idx,
-            "rcharge": 0,
-			"duration": duration,
-			"start_time": stime,
-			"end_time": etime,
-            "Available from": str(datetime.time(int(stime)//60, int(stime)%60)),
-            "Available till": str(datetime.time(int(etime)//60, int(etime)%60)),
-			"node": req_nodeid
-        }, index=[0])
-        
-        config.REQUESTS = pd.concat([new_request, config.REQUESTS[:]]).drop_duplicates().reset_index(drop=True)
-
-        config.REQUEST_NODES.append(dl.Marker(position=[config.Y_NODES[req_nodeid],config.X_NODES[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-        config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid])
-
-        st = helper.roundup(stime)
-        nslots = int(math.ceil(duration/SLOT_TIME))
-        matching.reqSlots[new_idx]=nslots
-        matchedSlots = []
-        while st + duration <= etime:
-            matchedSlots.append(int(st/SLOT_TIME))
-            st+=SLOT_TIME
-
-        flag=0
-        while not config.NEAREST_CS[new_idx].empty():
-
-            station = config.NEAREST_CS[new_idx].get()[1]
-            if(matching.graphs.get(station)==None):
-                matching.graphs[station]=dict()
-            matching.graphs[station][new_idx] = matchedSlots
-            if(config.REQUEST_MAPPING.get(station)==None):
-                config.REQUEST_MAPPING[station]=[]
-            config.REQUEST_MAPPING[station].append(new_idx)
-
-            matching.used.clear()
-            if(config.SLOT_MAPPING.get(station)==None): 
-                config.SLOT_MAPPING[station]={}
-            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[station], station)):
-                print(f"\n>>> REQUEST ACCEPTED! Accommodated in Station {station}")
-                alert_message = f"Request Accepted -> Accommodated in Station {station}"
-                alert_open = True; alert_color="success"
-                matching.satisfied_requests+=1
-                flag=1
-                break
-            else:
-                config.REQUEST_MAPPING[station].remove(new_idx)
-                del matching.graphs[station][new_idx]
-
-        if(flag==0): 
-            print("\n>>> REQUEST DENIED.")
-            alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
-
-    
-    return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
+    return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records')
 
 
-@app.callback(
+@callback(
     Output('cs_schedule','data'),
     Output('cs_schedule','columns'),
     Input('all_cs_button','n_clicks'),
@@ -224,10 +154,10 @@ def show_schedule(n_clicks, cs_input):
     cols = [{"name": i, "id": i} for i in schedule.columns]
     return schedule.to_dict("records"), cols
 
-app.layout = dbc.Container([
+layout = dbc.Container([
 	Navbar(),
     html.Br(),
-    html.H1("Slot Scheduling App", style={"text-align":"center"}),
+    html.H1("Operator End", style={"text-align":"center"}),
     html.Br(),
     dbc.Row([
         dbc.Col(dl.Map(style={'width': '100%', 'height': '50vh', 'margin': "auto", "display": "block"},
@@ -253,7 +183,6 @@ app.layout = dbc.Container([
         data=config.REQUESTS.to_dict("records"), 
         columns=[], 
         id="req_tbl",
-        # style_table={'overflowX': 'scroll'},
         style_as_list_view=True,
         style_cell={'textAlign': 'center'},
         style_header={'backgroundColor': 'white','fontWeight': 'bold'}, 
@@ -273,12 +202,4 @@ app.layout = dbc.Container([
             style_header={'backgroundColor': 'white','fontWeight': 'bold'}
         )
     ]),
-    html.Br(),
-    html.Br(),
-    dbc.Row([dbc.Col(layout.new_request_form)]),
-    dbc.Alert(id="schedule_alert", is_open=False)
 ])
-
-if __name__ == "__main__":
-    # app.run_server(host='172.16.26.67', port=8053)
-    app.run_server(host='127.0.0.1',debug=True, port=8002)
