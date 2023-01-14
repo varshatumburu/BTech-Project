@@ -210,14 +210,15 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
 
     print("\nCompleted scheduling!")
 
-def get_nearest_cs_pq(x, y):
+def get_nearest_cs_pq(x, y, max_distance=math.inf):
     q = PriorityQueue()
     for j in config.CS_NODES: 
         # n1, n2 nearest node to x, y in graph (estimation done from there)
         [n1, n2] = ox.distance.nearest_nodes(config.GRAPH,[x,config.X_NODES[j]], [y,config.Y_NODES[j]])
         try:
             dist = nx.shortest_path_length(config.GRAPH, n1, n2, weight='length')
-            q.put((dist,j))
+            if dist <= max_distance :
+                q.put((dist,j))
         except nx.exception.NetworkXNoPath:
             continue
     return q

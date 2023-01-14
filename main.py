@@ -72,11 +72,15 @@ def update_location_text(place, chosen_item):
     State('duration_input','value'),
     State('start_time_input','value'),
     State('end_time_input','value'),
+    State('current_soc','value'),
+    State('battery_capacity','value'),
+    State('mileage','value'),
+    State('fast_charging','value'),
     State('er_location_input', 'value'),
     State('er_radius_input', 'value'),
     State('er_no_of_cs_input', 'value'),
 )
-def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, location, radius, number_of_cs):
+def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, current_soc, bcap, mileage, fcharging, location, radius, number_of_cs):
 
     alert_message=""; alert_open=False; alert_color = "primary"
     if config.GRAPH is None:
@@ -102,6 +106,9 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
         # info related to cs
         config.TOTAL_STATIONS = number_of_cs
         config.CS_NODES = random.sample(range(0,num_of_tot_nodes),number_of_cs)
+        config.CHARGING_STATIONS = [{x:{"node_id": x, 
+                                        "slow_ports": 1,
+                                        "fast_ports": 1}} for x in config.CS_NODES]
 
         request_nodes = random.choices([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],k=requests_df.shape[0])
         reqpositions = []; positions = []
@@ -112,7 +119,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             y=config.Y_NODES[nodeid]; x=config.X_NODES[nodeid]
             request_index = requests_df.loc[requests_df.index[idx],'index']
             reqpositions.append(dl.Marker(position=[y,x],children=dl.Tooltip(request_index, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-            config.NEAREST_CS[request_index]=helper.get_nearest_cs_pq(x,y)
+            md = requests_df.loc[requests_df.index[idx],'current_soc']*requests_df.loc[requests_df.index[idx],'mileage']*10
+            config.NEAREST_CS[request_index]=helper.get_nearest_cs_pq(x,y,md)
 
         config.REQUEST_MAPPING = helper.mapRequests2Stations(len(requests_df),config.NEAREST_CS)
         blocked=set(); leftover=[]
@@ -139,7 +147,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 
     if sched_clicks and sched_clicks>config.SCHED_CLICKS:
         new_idx = max(config.REQUESTS['index'])+1
-        duration, stime, etime, req_nodeid = int(duration), int(stime), int(etime), int(req_nodeid)
+        duration, stime, etime, req_nodeid, current_soc, bcap, mileage, fcharging = int(duration), int(stime), int(etime), int(req_nodeid), int(current_soc), int(bcap), int(mileage), int(fcharging)
         new_request = pd.DataFrame({
             "index": new_idx,
             "rcharge": 0,
@@ -148,13 +156,17 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
 			"end_time": etime,
             "Available from": str(datetime.time(int(stime)//60, int(stime)%60)),
             "Available till": str(datetime.time(int(etime)//60, int(etime)%60)),
-			"node": req_nodeid
+			"node": req_nodeid,
+            "current_soc": current_soc,
+            "battery_capacity": bcap,
+            "mileage": mileage,
+            "fast_charging": fcharging
         }, index=[0])
         
         config.REQUESTS = pd.concat([new_request, config.REQUESTS[:]]).drop_duplicates().reset_index(drop=True)
 
         config.REQUEST_NODES.append(dl.Marker(position=[config.Y_NODES[req_nodeid],config.X_NODES[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
-        config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid])
+        config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid], current_soc*mileage*10)
 
         st = helper.roundup(stime)
         nslots = int(math.ceil(duration/SLOT_TIME))
@@ -165,6 +177,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, lo
             st+=SLOT_TIME
 
         flag=0
+        dup = config.NEAREST_CS[new_idx]
         while not config.NEAREST_CS[new_idx].empty():
 
             station = config.NEAREST_CS[new_idx].get()[1]
@@ -275,6 +288,7 @@ app.layout = dbc.Container([
     ]),
     html.Br(),
     html.Br(),
+    html.H3("Make a new request"),
     dbc.Row([dbc.Col(layout.new_request_form)]),
     dbc.Alert(id="schedule_alert", is_open=False)
 ])

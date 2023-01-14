@@ -12,6 +12,9 @@ for i in range(100):
 	if(new_request["end_time"]==1440): new_request["end_time"]-=1
 	new_request["Available from"]=str(datetime.time(int(new_request["start_time"]//60), int(new_request["start_time"])%60))
 	new_request["Available till"]=str(datetime.time(int(new_request["end_time"]//60), int(new_request["end_time"])%60))
+	new_request["current_soc"] = random.randint(2,20)
+	new_request["battery_capacity"]=random.randint(40,80)
+	new_request["mileage"] = random.randint(50,400)
 	requests.append(new_request)
 
 json_object = json.dumps(requests, indent=4)

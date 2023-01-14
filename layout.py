@@ -83,9 +83,9 @@ cs_schedule_form = dbc.Form([cs_input_dropdown])
 
 new_request_labels = dbc.FormGroup([
     dbc.Label("Select request location (Node ID)", html_for="nid", width=3),
-    dbc.Label("Required charging time (in mins)", html_for="dur", width=2),
-    dbc.Label("Enter start time of availability", html_for="stime", width=2),
-    dbc.Label("Enter end time of availability", html_for="etime", width=2),
+    dbc.Label("Required charging time (in mins)", html_for="dur", width=3),
+    dbc.Label("Enter start time of availability", html_for="stime", width=3),
+    dbc.Label("Enter end time of availability", html_for="etime", width=3),
 ])
 
 new_request_children = dbc.FormGroup(
@@ -96,21 +96,59 @@ new_request_children = dbc.FormGroup(
         ),
         dbc.Col(
             dbc.Input(type="number", id="duration_input", placeholder="duration",min=0, step=10, max=1440, value=10),
-            width=2,
+            width=3,
         ),
         dbc.Col(
             dbc.Input(type="number", id="start_time_input", placeholder="start time",min=0, step=10, max=1440, value=600),
-            width=2,
+            width=3,
         ),
         dbc.Col(
             dbc.Input(type="number", id="end_time_input", placeholder="end time",min=0, step=10, max=1440, value=700),
-            width=2,
+            width=3,
         ),
+    ],
+    row = True,
+)
+
+vehicle_details = dbc.FormGroup([        
+        dbc.Label("Current SOC (in %):", html_for="current_soc", width=2),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="current_soc", placeholder="50%", min=0, step=1, max=100, value=10
+            ),
+            width=1,
+        ),
+        dbc.Label("Battery Capacity (in kWh):", html_for="battery_capacity", width=3),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="battery_capacity", placeholder="60", min=0, step=1, max=100, value=60
+            ),
+            width=1,
+        ),
+        dbc.Label("Mileage (in kms):", html_for="mileage", width=2),
+        dbc.Col(
+            dbc.Input(
+                type="number", id="mileage", placeholder="300", min=0, step=1, max=1000, value=300
+            ),
+            width=1,
+        ),
+    ], 
+    row=True,
+)
+
+fast_charging_option = dbc.FormGroup([
+        dbc.Col(dbc.Checklist(
+            options = [{"label":"Allow fast charging if no empty slot", "value":1}],
+            id="fast_charging",
+            switch=True,
+        ), width = 6),
         dbc.Col(
             dbc.Spinner(children=[dbc.Button("Schedule", id="schedule_button", color="primary")], size="sm", color="primary", id="spinner3"),
             width=3,
         )
-    ],
+    ], 
     row = True,
 )
-new_request_form = dbc.Form([new_request_labels,new_request_children])
+
+
+new_request_form = dbc.Form([new_request_labels, new_request_children, vehicle_details, fast_charging_option])

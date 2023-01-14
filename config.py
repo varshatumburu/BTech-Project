@@ -5,6 +5,7 @@ from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="Slot Scheduling App")
 
 CENTER = None
+CHARGING_STATIONS=dict()
 CS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
 CS_NODES = []
 CS_POSITIONS = []
