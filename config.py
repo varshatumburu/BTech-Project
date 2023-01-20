@@ -10,9 +10,9 @@ CS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
 CS_NODES = []
 CS_POSITIONS = []
 COLUMNS = []
-DATASET = 'datasets/sample.json'
+DATASET = '/home/varsha_1901cs69/btp/scheduling/datasets/sample.json'
 GRAPH = None
-LOCATION = geolocator.geocode("India")
+LOCATION = geolocator.geocode("India",timeout=None)
 N_CLICKS = 0
 NEAREST_CS = dict()
 POLYGON = []

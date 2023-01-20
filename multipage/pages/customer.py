@@ -1,18 +1,21 @@
-import dash, config, requests, urllib.parse
+import dash, requests, urllib.parse
 from dash import Dash, html, Input, Output, State, dash_table, callback, dcc
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
-from navbar import Navbar
 import dash_leaflet as dl
-from dash.exceptions import PreventUpdate
 import pandas as pd
-import matching, multipage.customer_layout as customer_layout, helper
 import datetime
 import math
-from scheduler import SLOT_TIME
-import random
+import random, sys
 
-dash.register_page(__name__)
+sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
+import matching, customer_layout, helper
+from navbar import Navbar 
+from scheduler import SLOT_TIME
+
+sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
+import config
+
 
 # deals with auto complete input location
 @callback(

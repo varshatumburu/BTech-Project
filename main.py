@@ -1,15 +1,15 @@
-import dash, config, requests, urllib.parse
+import dash, config as config, requests, urllib.parse
 from dash import Dash, html, Input, Output, State, dash_table
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
-from navbar import Navbar
+from modules.navbar import Navbar
 import dash_leaflet as dl
 from dash.exceptions import PreventUpdate
 import pandas as pd
-import matching, layout, helper
+import modules.matching as matching, modules.layout as layout, modules.helper as helper
 import datetime
 import math
-from scheduler import SLOT_TIME
+from modules.scheduler import SLOT_TIME
 import random
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])

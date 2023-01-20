@@ -1,5 +1,11 @@
-import json, datetime, math, config
+import json, datetime, math, sys
+
+sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
 from scheduler import prebooked_scheduling, SLOT_TIME
+
+sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
+import config
+
 
 global_requests = json.load(open(config.DATASET))
 

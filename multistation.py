@@ -1,6 +1,6 @@
 import json, math
-import matching
-from scheduler import SLOT_TIME
+import modules.matching as matching
+from modules.scheduler import SLOT_TIME
 from ast import literal_eval
 
 distances = []

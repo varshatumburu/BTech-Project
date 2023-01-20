@@ -1,14 +1,16 @@
-import config, requests, urllib.parse
+import requests, urllib.parse
 import plotly.graph_objects as go
 import osmnx as ox
 from math import asin,cos,pi,sin
 import pandas as pd
 import networkx as nx
 from queue import PriorityQueue
-import matching, main
-import math
-from scheduler import SLOT_TIME
+import math, sys
 from geopy.geocoders import Nominatim
+
+sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
+import config, matching
+from scheduler import prebooked_scheduling, SLOT_TIME
 
 mapbox_access_token = "pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g"
 geolocator = Nominatim(user_agent="Slot Scheduling App")
@@ -27,11 +29,11 @@ def get_eco_zoom_level(radius):
 #Function to form default intial map
 def default_location():
     parsed_loc = urllib.parse.quote("India")
-    response = requests.get("http://api.mapbox.com/geocoding/v5/mapbox.places/"+parsed_loc+".json?country=IN&access_token=pk.eyJ1IjoiaGFyc2hqaW5kYWwiLCJhIjoiY2tleW8wbnJlMGM4czJ4b2M0ZDNjeGN4ZyJ9.XXPg4AsUx0GUygvK8cxI6g")
+    response = requests.get("http://api.mapbox.com/geocoding/v5/mapbox.places/"+parsed_loc+".json?country=IN&access_token="+mapbox_access_token)
     res=response.json()
     latitude=res["features"][0]["geometry"]["coordinates"][1]
     longitude=res["features"][0]["geometry"]["coordinates"][0]
-    location = geolocator.geocode("India")
+    location = geolocator.geocode("India", timeout=None)
     center=[]
     center.append(latitude)
     center.append(longitude)
@@ -173,6 +175,7 @@ def mapRequests2Stations(nreq, nearest_cs):
         st=-1
         if not nearest_cs[i].empty():
             st = nearest_cs[i].get()[1]
+            print(st)
             if reqMapping.get(st)==None or len(reqMapping[st])==0:
                 reqMapping[st]=[]
 
@@ -182,12 +185,12 @@ def mapRequests2Stations(nreq, nearest_cs):
 
 def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_cs):
     iter=0; prev=-1
-    while len(blocked)!=nreq and prev!=len(blocked):
+    # print(reqMapping)
+    while len(blocked)!=nreq and prev!=len(blocked) and reqMapping:
         print(f"\n>>> Iteration {iter} >>> ")
         for st in list(reqMapping.keys()):
             prev=len(blocked)
             
-            # print(reqMapping[id])
             reqidx = reqMapping[st]
             if len(reqidx)==0: continue
             print(f"\nSchedule for Station {st}:")

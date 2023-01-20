@@ -1,18 +1,21 @@
-import dash, config, requests, urllib.parse
+import dash, requests, urllib.parse
 from dash import Dash, html, Input, Output, State, dash_table, callback, dcc
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
-from navbar import Navbar
 import dash_leaflet as dl
 from dash.exceptions import PreventUpdate
 import pandas as pd
-import matching, layout, helper
 import datetime
-import math
-from scheduler import SLOT_TIME
-import random
+import random, sys
 
-dash.register_page(__name__)
+sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
+import layout as operator_layout, helper
+from navbar import Navbar
+from scheduler import SLOT_TIME
+
+sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
+import config
+
 
 # deals with auto complete input location
 @callback(
@@ -174,7 +177,7 @@ layout = dbc.Container([
                 ]
               ) 
             ], id="er_result_map"), width=7),
-        dbc.Col(layout.all_nodes_form, width=5), 
+        dbc.Col(operator_layout.all_nodes_form, width=5), 
     ]),
     html.Br(),
     html.H3("Existing Requests"),
@@ -190,7 +193,7 @@ layout = dbc.Container([
     ]),
     html.Br(),
     dbc.Row([
-        dbc.Col(layout.cs_schedule_form),
+        dbc.Col(operator_layout.cs_schedule_form),
     ]),
     html.Div([
         dash_table.DataTable(
