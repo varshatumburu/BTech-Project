@@ -10,7 +10,7 @@ CS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
 CS_NODES = []
 CS_POSITIONS = []
 COLUMNS = []
-DATASET = '/home/varsha_1901cs69/btp/scheduling/datasets/sample.json'
+DATASET = '/home/varsha_1901cs69/btp/scheduling/datasets/requests.json'
 GRAPH = None
 LOCATION = geolocator.geocode("India",timeout=None)
 N_CLICKS = 0

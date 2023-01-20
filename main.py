@@ -106,9 +106,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
         # info related to cs
         config.TOTAL_STATIONS = number_of_cs
         config.CS_NODES = random.sample(range(0,num_of_tot_nodes),number_of_cs)
-        config.CHARGING_STATIONS = [{x:{"node_id": x, 
-                                        "slow_ports": 1,
-                                        "fast_ports": 1}} for x in config.CS_NODES]
+
 
         request_nodes = random.choices([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],k=requests_df.shape[0])
         reqpositions = []; positions = []
