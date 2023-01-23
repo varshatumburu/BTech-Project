@@ -7,7 +7,7 @@ sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
 import config
 
 
-global_requests = json.load(open(config.DATASET))
+global_requests = json.load(open(config.DATASET + "/requests.json"))
 
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
@@ -17,7 +17,7 @@ slot_mapping = dict(); used=dict()
 satisfied_requests=0
 graphs = dict()
 
-def createGraph(requests, station_index=-1):
+def createGraph(requests, port="-1"):
 	for req in requests:
 		st = roundup(req['start_time'])
 		nslots = int(math.ceil(req['duration']/SLOT_TIME))
@@ -29,10 +29,10 @@ def createGraph(requests, station_index=-1):
 			matchedSlots.append(int(st/SLOT_TIME))
 			st+=SLOT_TIME; i+=1
 
-		if(station_index==-1):
+		if(port=="-1"):
 			graph[req['index']]=(matchedSlots)
 		else:
-			graphs[station_index][req['index']]=(matchedSlots)
+			graphs[port][req['index']]=(matchedSlots)
 	
 def printSchedule(request=global_requests, slot_mapping=slot_mapping):
 
@@ -44,16 +44,16 @@ def printSchedule(request=global_requests, slot_mapping=slot_mapping):
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
-def kuhn(src, start_slot=0, slot_mapping=slot_mapping, station_index=-1):
+def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port="-1"):
 
 	if(used.get(src)!=None): return False
 	used[src]=True
 
 	nslots = reqSlots[src]
-	if station_index==-1:
+	if port=="-1":
 		possibleSlots = graph[src]
 	else:
-		possibleSlots = graphs[station_index][src]
+		possibleSlots = graphs[port][src]
 
 	for slot in possibleSlots:
 		if slot<start_slot:continue
@@ -67,7 +67,7 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, station_index=-1):
 			return True
 		else:
 			for l in lst:
-				if(kuhn(slot_mapping[l], slot+nslots, slot_mapping, station_index)): fl*=1
+				if(kuhn(slot_mapping[l], slot+nslots, slot_mapping, port)): fl*=1
 				else: fl*=0; break
 
 			if(fl):
@@ -77,19 +77,19 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, station_index=-1):
 
 	return False
 
-def init_schedule(reqSet, station_index=-1, slot_mapping = dict()):
-	if(station_index==-1): graph.clear()
-	else: graphs[station_index] = {}
+def init_schedule(reqSet, port="-1", slot_mapping = dict()):
+	if(port==-1): graph.clear()
+	else: graphs[port] = {}
 	requests = [req for req in global_requests if req['index'] in reqSet]
 	selected = prebooked_scheduling(requests)
 	requests = [req for req in requests if req['index'] in selected]
 
-	createGraph(requests, station_index)
+	createGraph(requests, port)
 	satisfied_requests=0
 	# print(nreq)
 	for i in [r['index'] for r in requests]:
 		used.clear()
-		if(kuhn(i,0,slot_mapping, station_index)): satisfied_requests+=1
+		if(kuhn(i,0,slot_mapping, port)): satisfied_requests+=1
 
 	printSchedule(global_requests, slot_mapping)
 	return selected, slot_mapping

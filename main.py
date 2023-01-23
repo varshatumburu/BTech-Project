@@ -75,12 +75,12 @@ def update_location_text(place, chosen_item):
     State('current_soc','value'),
     State('battery_capacity','value'),
     State('mileage','value'),
-    State('fast_charging','value'),
+    State('vehicle_type','value'),
     State('er_location_input', 'value'),
     State('er_radius_input', 'value'),
     State('er_no_of_cs_input', 'value'),
 )
-def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, current_soc, bcap, mileage, fcharging, location, radius, number_of_cs):
+def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, current_soc, bcap, mileage, vehicle_type, location, radius, number_of_cs):
 
     alert_message=""; alert_open=False; alert_color = "primary"
     if config.GRAPH is None:
@@ -91,7 +91,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
-        requests_df = pd.read_json(config.DATASET)
+        requests_df = pd.read_json(config.DATASET+"/requests.json")
+        stations_df = pd.read_json(config.DATASET+"/charging_stations.json")
         config.N_CLICKS = n_clicks
         testcases = []
         corners = []
@@ -106,28 +107,39 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
         # info related to cs
         config.TOTAL_STATIONS = number_of_cs
         config.CS_NODES = random.sample(range(0,num_of_tot_nodes),number_of_cs)
+        stations_df['node']=config.CS_NODES
+        config.CHARGING_STATIONS = stations_df
+        config.REQUESTS = requests_df
 
-
-        request_nodes = random.choices([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],k=requests_df.shape[0])
-        reqpositions = []; positions = []
+        # Plot all nodes on map
+        positions = []
         for i in range(len(config.X_NODES)):
             positions.append(dl.Marker(position=[config.Y_NODES[i],config.X_NODES[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
 
+        # print("all nodes plotted")
+        # Plot request nodes on map
+        request_nodes = random.choices([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],k=requests_df.shape[0])
+        reqpositions = []; 
         for idx, nodeid in enumerate(request_nodes):
             y=config.Y_NODES[nodeid]; x=config.X_NODES[nodeid]
             request_index = requests_df.loc[requests_df.index[idx],'index']
             reqpositions.append(dl.Marker(position=[y,x],children=dl.Tooltip(request_index, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
+            # SOC restriction
             md = requests_df.loc[requests_df.index[idx],'current_soc']*requests_df.loc[requests_df.index[idx],'mileage']*10
-            config.NEAREST_CS[request_index]=helper.get_nearest_cs_pq(x,y,md)
+            config.NEAREST_CS[request_index] = helper.get_nearest_cs_pq(x,y,md)
+            config.NEAREST_PORTS[request_index] = helper.get_nearest_ports_pq(requests_df.to_dict("records")[request_index], config.NEAREST_CS[request_index])
 
-        config.REQUEST_MAPPING = helper.mapRequests2Stations(len(requests_df),config.NEAREST_CS)
+        # print("request nodes plotted")
+        config.REQUEST_MAPPING = helper.mapRequests2Ports(len(requests_df),config.NEAREST_PORTS)
         blocked=set(); leftover=[]
-        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.REQUEST_MAPPING,config.NEAREST_CS)
+        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.REQUEST_MAPPING,config.NEAREST_PORTS)
 
-        config.CS_POSITIONS = [dl.Marker(position=[config.Y_NODES[i],config.X_NODES[i]],children=dl.Tooltip(i, direction='top', permanent=True),\
+        # Plot charging stations on map
+        config.CS_POSITIONS = [dl.Marker(position=[config.Y_NODES[node],config.X_NODES[node]],children=dl.Tooltip(idx, direction='top', permanent=True),\
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
-                for i in config.CS_NODES]
-
+                for idx, node in enumerate(config.CS_NODES)]
+        
+        # print("station nodes plotted")
         req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.CS_NODES]
         config.REQUESTS_DROPDOWN = pd.DataFrame(req_node_content,columns = ['label','value'])
 
@@ -138,14 +150,13 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
 
         config.COLUMNS = [{"name": i, "id": i} for i in requests_df.columns]
 
-        dropdown_content = [[f"CS #{i}",f"{i}"] for i in config.CS_NODES]
+        dropdown_content = [[f"CS #{i}",f"{i}"] for i in range(len(config.CS_NODES))]
         dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
         config.CS_DROPDOWN = dropdown
-        config.REQUESTS = requests_df
-
+        
     if sched_clicks and sched_clicks>config.SCHED_CLICKS:
         new_idx = max(config.REQUESTS['index'])+1
-        duration, stime, etime, req_nodeid, current_soc, bcap, mileage, fcharging = int(duration), int(stime), int(etime), int(req_nodeid), int(current_soc), int(bcap), int(mileage), int(fcharging)
+        duration, stime, etime, req_nodeid, current_soc, bcap, mileage = int(duration), int(stime), int(etime), int(req_nodeid), int(current_soc), int(bcap), int(mileage)
         new_request = pd.DataFrame({
             "index": new_idx,
             "rcharge": 0,
@@ -158,13 +169,14 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
             "current_soc": current_soc,
             "battery_capacity": bcap,
             "mileage": mileage,
-            "fast_charging": fcharging
+            "vehicle_type": vehicle_type
         }, index=[0])
         
         config.REQUESTS = pd.concat([new_request, config.REQUESTS[:]]).drop_duplicates().reset_index(drop=True)
 
         config.REQUEST_NODES.append(dl.Marker(position=[config.Y_NODES[req_nodeid],config.X_NODES[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
         config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid], current_soc*mileage*10)
+        config.NEAREST_PORTS[new_idx] = helper.get_nearest_ports_pq(new_request.to_dict("records"), config.NEAREST_CS[new_idx])
 
         st = helper.roundup(stime)
         nslots = int(math.ceil(duration/SLOT_TIME))
@@ -175,55 +187,74 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, cu
             st+=SLOT_TIME
 
         flag=0
-        dup = config.NEAREST_CS[new_idx]
-        while not config.NEAREST_CS[new_idx].empty():
+        while not config.NEAREST_PORTS[new_idx].empty():
 
-            station = config.NEAREST_CS[new_idx].get()[1]
-            if(matching.graphs.get(station)==None):
-                matching.graphs[station]=dict()
-            matching.graphs[station][new_idx] = matchedSlots
-            if(config.REQUEST_MAPPING.get(station)==None):
-                config.REQUEST_MAPPING[station]=[]
-            config.REQUEST_MAPPING[station].append(new_idx)
+            port = config.NEAREST_PORTS[new_idx].get()[1]
+
+            if(matching.graphs.get(port)==None):
+                matching.graphs[port]=dict()
+            matching.graphs[port][new_idx] = matchedSlots
+
+                    
+            if(config.REQUEST_MAPPING.get(port)==None):
+                config.REQUEST_MAPPING[port]=[]
+            config.REQUEST_MAPPING[port].append(new_idx)
 
             matching.used.clear()
-            if(config.SLOT_MAPPING.get(station)==None): 
-                config.SLOT_MAPPING[station]={}
-            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[station], station)):
-                print(f"\n>>> REQUEST ACCEPTED! Accommodated in Station {station}")
-                alert_message = f"Request Accepted -> Accommodated in Station {station}"
+            if(config.SLOT_MAPPING.get(port)==None): 
+                config.SLOT_MAPPING[port]={}
+
+            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[port], port)):
+                print(f"\n>>> REQUEST ACCEPTED! Accommodated in Port {port}")
+                alert_message = f"Request Accepted -> Accommodated in Port {port}"
                 alert_open = True; alert_color="success"
                 matching.satisfied_requests+=1
                 flag=1
                 break
             else:
-                config.REQUEST_MAPPING[station].remove(new_idx)
-                del matching.graphs[station][new_idx]
+                config.REQUEST_MAPPING[port].remove(new_idx)
+                del matching.graphs[port][new_idx]
 
         if(flag==0): 
             print("\n>>> REQUEST DENIED.")
             alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
-
     
     return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
 
+@app.callback(
+    Output('port_input_dd','options'),
+    Input('all_cs_button', 'n_clicks'),
+    State('cs_input_dd','value')
+)
+def display_ports(n_clicks, station_index):
+    if n_clicks is None: 
+        raise PreventUpdate
+    
+    nports = len(config.CHARGING_STATIONS.to_dict("records")[int(station_index)]["ports"])
+    dropdown_content = [[f"Port #{i}",f"{i}"] for i in range(nports)]
+    dropdown = pd.DataFrame(dropdown_content,columns = ['label','value'])
+    config.PORTS_DROPDOWN = dropdown
+
+    return config.PORTS_DROPDOWN.to_dict("records")
 
 @app.callback(
     Output('cs_schedule','data'),
     Output('cs_schedule','columns'),
-    Input('all_cs_button','n_clicks'),
-    State('cs_input_dd','value')
+    Input('all_port_button','n_clicks'),
+    State('cs_input_dd','value'),
+    State('port_input_dd','value')
 )
-def show_schedule(n_clicks, cs_input):
+def show_schedule(n_clicks, station, port):
     if n_clicks is None:
         raise PreventUpdate
     
-    if config.SLOT_MAPPING.get(int(cs_input))==None:
+    charging_port = str(station)+"p"+str(port)
+    if config.SLOT_MAPPING.get(charging_port)==None:
         return [],[]
 
     check=[]; table_data=[]
-    for key in config.SLOT_MAPPING[int(cs_input)].keys():
-        dup = config.SLOT_MAPPING[int(cs_input)]
+    for key in config.SLOT_MAPPING[charging_port].keys():
+        dup = config.SLOT_MAPPING[charging_port]
         if(dup[key] in check): continue
         check.append(dup[key])
         dur = config.REQUESTS.loc[config.REQUESTS['index']==dup[key], 'duration'].iloc[0]
@@ -271,6 +302,7 @@ app.layout = dbc.Container([
         page_size=5)
     ]),
     html.Br(),
+    html.H3("Display Charging Schedule"),
     dbc.Row([
         dbc.Col(layout.cs_schedule_form),
     ]),

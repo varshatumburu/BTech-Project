@@ -66,20 +66,33 @@ all_nodes_form = dbc.Form([location_input,autocomplete_list_ecorouting, radius_i
 # cs dropdown list
 cs_input_dropdown = dbc.FormGroup(
     [
-        dbc.Label("Display Schedule for Charging Station:", html_for="no_of_cs", width=4),
+        dbc.Label("Choose charging station:", html_for="cs_display", width=4),
         dbc.Col(
             dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="cs_input_dd"),
             width=4,
         ),
         dbc.Col(
-            dbc.Spinner(children=[dbc.Button("Search", id="all_cs_button", color="primary")], size="sm", color="primary", id="spinner2"),
+            dbc.Spinner(children=[dbc.Button("Update ports", id="all_cs_button", color="primary")], size="sm", color="primary", id="cs_spinner"),
             width=4,
         )
-    ],
-    row=True,
+    ], row = True
 )
 
-cs_schedule_form = dbc.Form([cs_input_dropdown])
+port_input_dropdown = dbc.FormGroup(
+    [
+        dbc.Label("Choose corresponding port:", html_for="port_display", width=4),
+        dbc.Col(
+            dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="port_input_dd"),
+            width=4,
+        ),
+        dbc.Col(
+            dbc.Spinner(children=[dbc.Button("Find schedule", id="all_port_button", color="primary")], size="sm", color="primary", id="port_spinner"),
+            width=4,
+        )
+    ], row = True
+)
+
+cs_schedule_form = dbc.Form([cs_input_dropdown, port_input_dropdown])
 
 new_request_labels = dbc.FormGroup([
     dbc.Label("Select request location (Node ID)", html_for="nid", width=3),
@@ -136,19 +149,23 @@ vehicle_details = dbc.FormGroup([
     row=True,
 )
 
-fast_charging_option = dbc.FormGroup([
-        dbc.Col(dbc.Checklist(
-            options = [{"label":"Allow fast charging if no empty slot", "value":1}],
-            id="fast_charging",
-            switch=True,
-        ), width = 6),
+vehicle_option = dbc.FormGroup([
+        dbc.Label("Vehicle Type:", html_for="vehicle_type", width=2),
+        dbc.Col(
+            dcc.Dropdown(
+                options=[ {'label':'2-wheeler','value':'2w'},
+                          {'label':'3-wheeler','value':'3w'},
+                          {'label':'4-wheeler','value':'4w'} ],
+                value='4w', 
+                id='vehicle_type'), width = 3
+        ),
         dbc.Col(
             dbc.Spinner(children=[dbc.Button("Schedule", id="schedule_button", color="primary")], size="sm", color="primary", id="spinner3"),
-            width=3,
+            width=4,
         )
     ], 
     row = True,
 )
 
 
-new_request_form = dbc.Form([new_request_labels, new_request_children, vehicle_details, fast_charging_option])
+new_request_form = dbc.Form([new_request_labels, new_request_children, vehicle_details, vehicle_option])
