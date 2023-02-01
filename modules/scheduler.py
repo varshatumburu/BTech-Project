@@ -76,11 +76,11 @@ def optimize(jobs):
 	return used[idx]
 
 
-def prebooked_scheduling(requests):
+def prebooked_scheduling(requests, port):
 
 	permuted_jobs = []
 	for r in requests:
-		interval = r['duration']
+		interval = math.ceil(port['power']*60/r['battery_capacity'])
 		s = math.ceil(r['start_time']/SLOT_TIME) * SLOT_TIME
 
 		for start in range(s, r['end_time'], SLOT_TIME):

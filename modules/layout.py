@@ -96,7 +96,6 @@ cs_schedule_form = dbc.Form([cs_input_dropdown, port_input_dropdown])
 
 new_request_labels = dbc.FormGroup([
     dbc.Label("Select request location (Node ID)", html_for="nid", width=3),
-    dbc.Label("Required charging time (in mins)", html_for="dur", width=3),
     dbc.Label("Enter start time of availability", html_for="stime", width=3),
     dbc.Label("Enter end time of availability", html_for="etime", width=3),
 ])
@@ -105,10 +104,6 @@ new_request_children = dbc.FormGroup(
     [
         dbc.Col(
             dcc.Dropdown(options=[{'label':'None','value':'None'}], value="", id="req_node_input"),
-            width=3,
-        ),
-        dbc.Col(
-            dbc.Input(type="number", id="duration_input", placeholder="duration",min=0, step=10, max=1440, value=10),
             width=3,
         ),
         dbc.Col(

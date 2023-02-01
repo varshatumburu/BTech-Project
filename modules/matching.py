@@ -17,30 +17,36 @@ slot_mapping = dict(); used=dict()
 satisfied_requests=0
 graphs = dict()
 
-def createGraph(requests, port="-1"):
+def createGraph(requests, port_id="-1", charging_port={}):
+	duration = 0
 	for req in requests:
 		st = roundup(req['start_time'])
-		nslots = int(math.ceil(req['duration']/SLOT_TIME))
+		if charging_port:
+			duration = math.ceil(charging_port['power']*60/req['battery_capacity'])
+		else: 
+			duration = req['duration']
+		nslots = int(math.ceil(duration/SLOT_TIME))
 		reqSlots[req['index']]=nslots
 
 		matchedSlots=[]
 		i=1
-		while st + req['duration']<=req['end_time']:
+		while st + duration<=req['end_time']:
 			matchedSlots.append(int(st/SLOT_TIME))
 			st+=SLOT_TIME; i+=1
 
-		if(port=="-1"):
+		if(port_id=="-1"):
 			graph[req['index']]=(matchedSlots)
 		else:
-			graphs[port][req['index']]=(matchedSlots)
+			graphs[port_id][req['index']]=(matchedSlots)
 	
-def printSchedule(request=global_requests, slot_mapping=slot_mapping):
+def printSchedule(charging_port, request=global_requests, slot_mapping=slot_mapping):
 
 	check=[]
 	for key in sorted(slot_mapping.keys()):
 		if(slot_mapping[key] in check): continue
 		check.append(slot_mapping[key])
-		dur = [req for req in request if req['index']==slot_mapping[key]][0]['duration']
+		bcap = [req for req in request if req['index']==slot_mapping[key]][0]['battery_capacity']
+		dur = math.ceil(charging_port['power']*60/bcap)
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
@@ -77,21 +83,24 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port="-1"):
 
 	return False
 
-def init_schedule(reqSet, port="-1", slot_mapping = dict()):
-	if(port==-1): graph.clear()
-	else: graphs[port] = {}
+def init_schedule(reqSet, port_id="-1", slot_mapping = dict()):
+	if(port_id=="-1"): graph.clear()
+	else: graphs[port_id] = {}
+
 	requests = [req for req in global_requests if req['index'] in reqSet]
-	selected = prebooked_scheduling(requests)
+	csno = int(port_id.split('p')[0]); portno= int(port_id.split('p')[1])
+	charging_port = config.CHARGING_STATIONS.to_dict("records")[csno]["ports"][portno]
+	selected = prebooked_scheduling(requests, charging_port)
 	requests = [req for req in requests if req['index'] in selected]
 
-	createGraph(requests, port)
+	createGraph(requests, port_id, charging_port)
 	satisfied_requests=0
 	# print(nreq)
 	for i in [r['index'] for r in requests]:
 		used.clear()
-		if(kuhn(i,0,slot_mapping, port)): satisfied_requests+=1
+		if(kuhn(i,0,slot_mapping, port_id)): satisfied_requests+=1
 
-	printSchedule(global_requests, slot_mapping)
+	printSchedule(charging_port, global_requests, slot_mapping)
 	return selected, slot_mapping
 
 # Take in dynamic inputs 

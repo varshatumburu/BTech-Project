@@ -69,14 +69,13 @@ def update_location_text(place, chosen_item):
     Input('all_nodes_button', 'n_clicks'),
     Input('sched_button', 'n_clicks'),
     State('node_input', 'value'),
-    State('duration','value'),
     State('start_time','value'),
     State('end_time','value'),
     State('location_input', 'value'),
     State('radius_input', 'value'),
     State('no_of_cs_input', 'value'),
 )
-def hp_update_map(n_clicks, sched_clicks, req_nodeid, duration, stime, etime, location, radius, number_of_cs):
+def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, location, radius, number_of_cs):
 
     alert_message=""; alert_open=False; alert_color = "primary"
     if config.GRAPH is None:

@@ -233,7 +233,9 @@ def get_nearest_ports_pq(request, nearest_cs):
     while not nearest_cs.empty():
         dist, station_index = nearest_cs.get()
         for p,port in enumerate(stations.loc[station_index]["ports"]):
-            if request["vehicle_type"] in port["vehicles"] and port["power"]*60/request["battery_capacity"]<=request["end_time"]-request["start_time"]:
-                q.put((dist,str(station_index)+"p"+str(p)))
+            duration = port["power"]*60/request["battery_capacity"]
+            if request["vehicle_type"] in port["vehicles"] and duration<=request["end_time"]-request["start_time"]:
+                port_id = str(station_index)+"p"+str(p)
+                q.put((dist,port_id))
                 
     return q
