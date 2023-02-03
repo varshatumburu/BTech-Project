@@ -55,25 +55,28 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port="-1"):
 	if(used.get(src)!=None): return False
 	used[src]=True
 
-	nslots = reqSlots[src]
+	nslots = reqSlots[src] # number of slots required to fit
+
+	# Iterate through all ports in 1 cs, take some sorted order of ports 
 	if port=="-1":
 		possibleSlots = graph[src]
 	else:
+		cs, pidx = port.split('p')
 		possibleSlots = graphs[port][src]
 
 	for slot in possibleSlots:
 		if slot<start_slot:continue
 
 		fl=1
-		lst = [val for val in range(slot,slot+nslots) if val in slot_mapping.keys()]
+		busy_slots = [val for val in range(slot,slot+nslots) if val in slot_mapping.keys()]
 
-		if(len(lst)==0):
+		if(len(busy_slots)==0):
 			for i in range(nslots):
 				slot_mapping[slot+i]=src
 			return True
 		else:
-			for l in lst:
-				if(kuhn(slot_mapping[l], slot+nslots, slot_mapping, port)): fl*=1
+			for bs in busy_slots:
+				if(kuhn(slot_mapping[bs], slot+nslots, slot_mapping, port)): fl*=1
 				else: fl*=0; break
 
 			if(fl):

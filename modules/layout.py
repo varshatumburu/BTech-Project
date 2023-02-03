@@ -36,7 +36,7 @@ radius_input = dbc.FormGroup(
         dbc.Label("Radius (m)", html_for="radius", width=4),
         dbc.Col(
             dbc.Input(
-                type="number", id="er_radius_input", placeholder="Enter Radius between [500,8000] meters",min=100, step=1,max=8000, value=500
+                type="number", id="er_radius_input", placeholder="Enter Radius between [500,8000] meters",min=100, step=1,max=8000, value=1000
             ),
             width=8,
         ),

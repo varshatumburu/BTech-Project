@@ -57,6 +57,9 @@ def update_location_text(place, chosen_item):
     Output('dl_er_req_nodes','children'),
     Output('dl_er_cs_nodes', 'children'),
     Output('dl_er_circle', 'children'),
+    Output('2w_cs_ports', 'children'),
+    Output('3w_cs_ports', 'children'),
+    Output('4w_cs_ports', 'children'),
     Output('er_result_map', 'center'),
     Output('er_result_map', 'zoom'),
     Output('req_tbl','data'),
@@ -86,7 +89,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         fig, config.CENTER, config.ZOOM_LEVEL = helper.default_location()
 
     if n_clicks is None:
-        return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
+        return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON, config.W2_PORTS, config.W3_PORTS, config.W4_PORTS, config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
@@ -140,6 +143,23 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/station-icon/station-icon-14.jpg','iconSize':[30,40]}) \
                 for idx, node in enumerate(config.CS_NODES)]
         
+        w4_ports = []; w3_ports=[]; w2_ports=[]
+        stations = stations_df.to_dict("records")
+        for station in stations:
+            exclusive_ports = list(set([vt for p in station["ports"] for vt in p["vehicles"]]))
+            if "4w" in exclusive_ports: w4_ports.append(station["node"])
+            if "3w" in exclusive_ports: w3_ports.append(station["node"])
+            if "2w" in exclusive_ports: w2_ports.append(station["node"])
+            
+        config.W4_PORTS = [dl.Marker(position=[config.Y_NODES[id],config.X_NODES[id]],children=dl.Tooltip([idx for idx,f in enumerate(stations) if f["node"]==id][0], direction='top', permanent=True),\
+            riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/free-map-pin-icon/free-map-pin-icon-6.jpg','iconSize':[30,30]}) for id in w4_ports]
+        
+        config.W3_PORTS = [dl.Marker(position=[config.Y_NODES[id],config.X_NODES[id]],children=dl.Tooltip([idx for idx,f in enumerate(stations) if f["node"]==id][0], direction='top', permanent=True),\
+            riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/free-map-pin-icon/free-map-pin-icon-6.jpg','iconSize':[30,30]}) for id in w3_ports]
+        
+        config.W2_PORTS = [dl.Marker(position=[config.Y_NODES[id],config.X_NODES[id]],children=dl.Tooltip([idx for idx,f in enumerate(stations) if f["node"]==id][0], direction='top', permanent=True),\
+            riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/free-map-pin-icon/free-map-pin-icon-6.jpg','iconSize':[30,30]}) for id in w2_ports]
+
         # print("station nodes plotted")
         req_node_content = [[f"Node #{i}",f"{i}"] for i in range(num_of_tot_nodes) if i not in config.CS_NODES]
         config.REQUESTS_DROPDOWN = pd.DataFrame(req_node_content,columns = ['label','value'])
@@ -180,7 +200,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         while not config.NEAREST_PORTS[new_idx].empty():
 
             port_id = config.NEAREST_PORTS[new_idx].get()[1]
-            print(port_id)
+
             csno = int(port_id.split('p')[0]); portno = int(port_id.split('p')[1])
             charging_port = config.CHARGING_STATIONS.to_dict("records")[csno]["ports"][portno]
     
@@ -221,7 +241,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             print("\n>>> REQUEST DENIED.")
             alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
     
-    return config.POSITIONS,config.REQUEST_NODES,config.CS_POSITIONS, config.POLYGON , config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
+    return config.POSITIONS, config.REQUEST_NODES, config.CS_POSITIONS, config.POLYGON, config.W2_PORTS, config.W3_PORTS, config.W4_PORTS, config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
 
 @app.callback(
     Output('port_input_dd','options'),
@@ -287,6 +307,9 @@ app.layout = dbc.Container([
                 dl.Overlay(dl.LayerGroup(id="dl_er_req_nodes"), name="User Requests", checked=True),
                 dl.Overlay(dl.LayerGroup(id="dl_er_circle"), name="Search Area", checked=True),
                 dl.Overlay(dl.LayerGroup(id="dl_er_cs_nodes"), name="Charging Stations", checked=True),
+                dl.Overlay(dl.LayerGroup(id="2w_cs_ports"), name="2W Charging Ports", checked=False),
+                dl.Overlay(dl.LayerGroup(id="3w_cs_ports"), name="3W Charging Ports", checked=False),
+                dl.Overlay(dl.LayerGroup(id="4w_cs_ports"), name="4W Charging Ports", checked=False),
                 ]
               ) 
             ], id="er_result_map"), width=7),

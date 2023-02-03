@@ -232,10 +232,11 @@ def get_nearest_ports_pq(request, nearest_cs):
 
     while not nearest_cs.empty():
         dist, station_index = nearest_cs.get()
-        for p,port in enumerate(stations.loc[station_index]["ports"]):
+        sorted_ports = sorted(stations.loc[station_index]["ports"], key = lambda x:len(x["vehicles"]))
+        for port in sorted_ports:
             duration = port["power"]*60/request["battery_capacity"]
             if request["vehicle_type"] in port["vehicles"] and duration<=request["end_time"]-request["start_time"]:
-                port_id = str(station_index)+"p"+str(p)
+                port_id = str(station_index)+"p"+str(port["id"])
                 q.put((dist,port_id))
                 
     return q
