@@ -11,6 +11,7 @@ import datetime
 import math
 from modules.scheduler import SLOT_TIME
 import random
+import cs_generator
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
 
@@ -93,6 +94,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
+        cs_generator.write_scripts(number_of_cs)
         requests_df = pd.read_json(config.DATASET+"/requests.json")
         stations_df = pd.read_json(config.DATASET+"/charging_stations.json")
         config.N_CLICKS = n_clicks
@@ -226,7 +228,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             if(config.SLOT_MAPPING.get(port_id)==None): 
                 config.SLOT_MAPPING[port_id]={}
 
-            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[port_id], port_id)):
+            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING, port_id)):
                 print(f"\n>>> REQUEST ACCEPTED! Accommodated in Port {port_id}")
                 alert_message = f"Request Accepted -> Accommodated in Port {port_id}"
                 alert_open = True; alert_color="success"
