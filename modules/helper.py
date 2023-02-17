@@ -4,7 +4,7 @@ import osmnx as ox
 from math import asin,cos,pi,sin
 import pandas as pd
 import networkx as nx
-from queue import PriorityQueue
+from queue import PriorityQueue, Queue
 import math, sys
 from geopy.geocoders import Nominatim
 
@@ -174,7 +174,7 @@ def mapRequests2Ports(nreq, nearest_ports):
     for i in range(nreq):
         st=-1
         if not nearest_ports[i].empty():
-            st = nearest_ports[i].get()[1]
+            st = nearest_ports[i].get()
             if reqMapping.get(st)==None or len(reqMapping[st])==0:
                 reqMapping[st]=[]
 
@@ -199,7 +199,7 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_ports):
 
             for lr in leftover:
                 if not nearest_ports[lr].empty():
-                    next_nearest_port = nearest_ports[lr].get()[1]
+                    next_nearest_port = nearest_ports[lr].get()
                     reqMapping[port].remove(lr)
                     if reqMapping.get(next_nearest_port)==None or len(reqMapping[next_nearest_port])==0:
                         reqMapping[next_nearest_port]=[]
@@ -227,7 +227,7 @@ def get_nearest_cs_pq(x, y, max_distance=math.inf):
     return q
 
 def get_nearest_ports_pq(request, nearest_cs):
-    q = PriorityQueue()
+    q = Queue()
     stations = config.CHARGING_STATIONS
 
     while not nearest_cs.empty():
@@ -237,6 +237,6 @@ def get_nearest_ports_pq(request, nearest_cs):
             duration = port["power"]*60/request["battery_capacity"]
             if request["vehicle_type"] in port["vehicles"] and duration<=request["end_time"]-request["start_time"]:
                 port_id = str(station_index)+"p"+str(port["id"])
-                q.put((dist,port_id))
+                q.put(port_id)
                 
     return q

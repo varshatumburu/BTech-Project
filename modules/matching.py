@@ -77,12 +77,13 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port_id="-1"):
 			return True
 		else:
 			for bs in busy_slots:
-				print(int(cs), slot_mapping[port_id][bs])
+				# print(int(cs), slot_mapping[port_id][bs])
+				# print(charging_requests[slot_mapping[port_id][bs]])
 				shiftable_port_indices = [port["id"] for port in charging_stations[int(cs)]["ports"]\
 			      	if charging_requests[slot_mapping[port_id][bs]]["vehicle_type"] in port["vehicles"] \
 					and port["id"]!=int(pidx)]
 				sorted_port_indices = sorted(shiftable_port_indices, key= lambda x: len(charging_stations[int(cs)]["ports"][x]["vehicles"]))
-				print(sorted_port_indices)
+				# print(sorted_port_indices)
 
 				if(kuhn(slot_mapping[port_id][bs], slot+nslots, slot_mapping, port_id)):
 					for i in range(nslots):
@@ -91,7 +92,7 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port_id="-1"):
 				else: 
 					for sp in sorted_port_indices:
 						next_portid = cs+"p"+str(sp)
-						print(port_id, next_portid)
+						# print(port_id, next_portid)
 						if(kuhn(slot_mapping[port_id][bs], 0, slot_mapping, next_portid)):
 							for i in range(nslots):
 								slot_mapping[port_id][slot+i]=src

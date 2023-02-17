@@ -176,6 +176,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         config.CS_DROPDOWN = dropdown
         
     if sched_clicks and sched_clicks>config.SCHED_CLICKS:
+        config.SCHED_CLICKS = sched_clicks
         new_idx = max(config.REQUESTS['index'])+1
         stime, etime, req_nodeid, current_soc, bcap, mileage = int(stime), int(etime), int(req_nodeid), int(current_soc), int(bcap), int(mileage)
         new_request = pd.DataFrame(data={
@@ -200,8 +201,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
 
         flag=0
         while not config.NEAREST_PORTS[new_idx].empty():
-
-            port_id = config.NEAREST_PORTS[new_idx].get()[1]
+            port_id = config.NEAREST_PORTS[new_idx].get()
+            # print(port_id)
 
             csno = int(port_id.split('p')[0]); portno = int(port_id.split('p')[1])
             charging_port = config.CHARGING_STATIONS.to_dict("records")[csno]["ports"][portno]
@@ -241,7 +242,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
 
         if(flag==0): 
             print("\n>>> REQUEST DENIED.")
-            alert_message = "Request Denied :("; alert_open=True; alert_color="danger"
+            alert_message = "No slot available for given specifications."; alert_open=True; alert_color="danger"
     
     return config.POSITIONS, config.REQUEST_NODES, config.CS_POSITIONS, config.POLYGON, config.W2_PORTS, config.W3_PORTS, config.W4_PORTS, config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
 
