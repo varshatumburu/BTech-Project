@@ -18,7 +18,7 @@
 <key id="d2" for="graph" attr.name="crs" attr.type="string"/>
 <key id="d1" for="graph" attr.name="created_with" attr.type="string"/>
 <key id="d0" for="graph" attr.name="created_date" attr.type="string"/>
-<graph edgedefault="directed"><data key="d0">2023-02-17 17:24:02</data>
+<graph edgedefault="directed"><data key="d0">2023-02-26 19:23:45</data>
 <data key="d1">OSMnx 1.1.2</data>
 <data key="d2">epsg:4326</data>
 <data key="d3">True</data>
@@ -15346,7 +15346,7 @@
 </edge>
 <edge source="9970335487" target="4138477388" id="0">
   <data key="d8">[1088205550, 315604583]</data>
-  <data key="d10">['residential', 'unclassified']</data>
+  <data key="d10">['unclassified', 'residential']</data>
   <data key="d17">10, 20</data>
   <data key="d11">False</data>
   <data key="d12">197.016</data>

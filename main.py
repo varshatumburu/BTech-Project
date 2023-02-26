@@ -210,16 +210,15 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             st = helper.roundup(stime)
             duration = math.ceil(charging_port['power']*60/bcap)
             nslots = int(math.ceil(duration/SLOT_TIME))
-            matching.reqSlots[new_idx]=nslots
+            config.REQUIRED_SLOTS[new_idx]=nslots
             matchedSlots = []
             while st + duration <= etime:
                 matchedSlots.append(int(st/SLOT_TIME))
                 st+=SLOT_TIME
 
-            if(matching.graphs.get(port_id)==None):
-                matching.graphs[port_id]=dict()
-            matching.graphs[port_id][new_idx] = matchedSlots
-
+            if(config.POSSIBLE_SLOTS.get(port_id)==None):
+                config.POSSIBLE_SLOTS[port_id]=dict()
+            config.POSSIBLE_SLOTS[port_id][new_idx] = matchedSlots
                     
             if(config.REQUEST_MAPPING.get(port_id)==None):
                 config.REQUEST_MAPPING[port_id]=[]
@@ -233,12 +232,11 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
                 print(f"\n>>> REQUEST ACCEPTED! Accommodated in Port {port_id}")
                 alert_message = f"Request Accepted -> Accommodated in Port {port_id}"
                 alert_open = True; alert_color="success"
-                matching.satisfied_requests+=1
                 flag=1
                 break
             else:
                 config.REQUEST_MAPPING[port_id].remove(new_idx)
-                del matching.graphs[port_id][new_idx]
+                del config.POSSIBLE_SLOTS[port_id][new_idx]
 
         if(flag==0): 
             print("\n>>> REQUEST DENIED.")

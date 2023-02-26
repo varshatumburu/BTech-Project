@@ -12,10 +12,9 @@ global_requests = json.load(open(config.DATASET + "/requests.json"))
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
-graph=dict(); reqSlots = dict()
+graph=dict(); reqSlots = config.REQUIRED_SLOTS
 slot_mapping = dict(); used=dict()
-satisfied_requests=0
-graphs = dict()
+graphs = config.POSSIBLE_SLOTS
 
 def createGraph(requests, port_id="-1", charging_port={}):
 	duration = 0
@@ -111,18 +110,17 @@ def init_schedule(reqSet, port_id="-1", slot_mapping = dict()):
 	requests = [req for req in requests if req['index'] in selected]
 
 	createGraph(requests, port_id, charging_port)
-	satisfied_requests=0
 	
 	slot_mapping[port_id]={}
 	for i in [r['index'] for r in requests]:
 		used.clear()
-		if(kuhn(i,0,slot_mapping, port_id)): satisfied_requests+=1
+		if(kuhn(i,0,slot_mapping, port_id)): pass
 
 	printSchedule(charging_port, global_requests, slot_mapping[port_id])
 	return selected, slot_mapping[port_id]
 
 # Take in dynamic inputs 
-def dynamic_requests(satisfied_requests=0):
+def dynamic_requests():
 	nreq = len(global_requests)
 	idx = max([r['index'] for r in global_requests])+1
 	while input("-----------------------\nEnter to go to new request: (-1 to break)")!="-1":
@@ -150,7 +148,6 @@ def dynamic_requests(satisfied_requests=0):
 		used.clear()
 		if(kuhn(idx)): 
 			print("\n>>> REQUEST ACCEPTED! NEW SCHEDULE:")
-			satisfied_requests+=1
 		else: 
 			print("\n>>> REQUEST DENIED. BUSY SCHEDULE.")
 
@@ -159,11 +156,10 @@ def dynamic_requests(satisfied_requests=0):
 
 if __name__=='__main__':
 	createGraph(global_requests)
-	satisfied_requests=0
 
 	for i in [r['index'] for r in global_requests]:
 		used.clear()
-		if(kuhn(i)): satisfied_requests+=1
+		if(kuhn(i)): pass
 
 	printSchedule()
 	dynamic_requests()

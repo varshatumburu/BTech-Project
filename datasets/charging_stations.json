@@ -4,20 +4,40 @@
         "ports": [
             {
                 "id": 0,
-                "type": "Level3AC",
-                "voltage": 250,
-                "power": 7,
+                "type": "Level1DC",
+                "voltage": 40,
+                "power": 18,
                 "vehicles": [
-                    "2w"
+                    "2w",
+                    "3w"
                 ]
             },
             {
                 "id": 1,
-                "type": "Level2AC",
-                "voltage": 130,
-                "power": 16,
+                "type": "Level1DC",
+                "voltage": 160,
+                "power": 9,
                 "vehicles": [
-                    "3w",
+                    "2w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 2,
+                "type": "Level2AC",
+                "voltage": 150,
+                "power": 19,
+                "vehicles": [
+                    "4w"
+                ]
+            },
+            {
+                "id": 3,
+                "type": "Level2AC",
+                "voltage": 110,
+                "power": 9,
+                "vehicles": [
+                    "2w",
                     "4w"
                 ]
             }
@@ -28,9 +48,18 @@
         "ports": [
             {
                 "id": 0,
-                "type": "Level1DC",
-                "voltage": 260,
-                "power": 5,
+                "type": "Level3AC",
+                "voltage": 120,
+                "power": 19,
+                "vehicles": [
+                    "3w"
+                ]
+            },
+            {
+                "id": 1,
+                "type": "Level3AC",
+                "voltage": 20,
+                "power": 11,
                 "vehicles": [
                     "2w",
                     "3w",
@@ -38,29 +67,10 @@
                 ]
             },
             {
-                "id": 1,
-                "type": "Level3AC",
-                "voltage": 250,
-                "power": 10,
-                "vehicles": [
-                    "3w",
-                    "4w"
-                ]
-            },
-            {
                 "id": 2,
                 "type": "Level2DC",
-                "voltage": 50,
-                "power": 9,
-                "vehicles": [
-                    "4w"
-                ]
-            },
-            {
-                "id": 3,
-                "type": "Level3AC",
-                "voltage": 100,
-                "power": 6,
+                "voltage": 210,
+                "power": 19,
                 "vehicles": [
                     "4w"
                 ]

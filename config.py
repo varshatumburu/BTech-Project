@@ -19,10 +19,12 @@ NEAREST_PORTS = dict()
 POLYGON = []
 PORTS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
 POSITIONS = 0
+POSSIBLE_SLOTS = dict()
 REQUESTS = pd.DataFrame()
 REQUESTS_DROPDOWN = pd.DataFrame(columns = ['label','value'])
 REQUEST_MAPPING = dict()
 REQUEST_NODES = []
+REQUIRED_SLOTS = dict()
 SCHED_CLICKS = 0
 SLOT_MAPPING = {}
 TOTAL_NODES = 0
