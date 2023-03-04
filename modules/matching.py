@@ -2,6 +2,7 @@ import json, datetime, math, sys
 
 sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
 from scheduler import prebooked_scheduling, SLOT_TIME
+import helper
 
 sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
 import config
@@ -21,7 +22,7 @@ def createGraph(requests, port_id="-1", charging_port={}):
 	for req in requests:
 		st = roundup(req['start_time'])
 		if charging_port:
-			duration = math.ceil(charging_port['power']*60/req['battery_capacity'])
+			duration = helper.find_duration(charging_port['power'], req['battery_capacity'])
 		else: 
 			duration = req['duration']
 		# nslots = int(math.ceil(duration/SLOT_TIME))
@@ -45,7 +46,7 @@ def printSchedule(charging_port, request=global_requests, slot_mapping=slot_mapp
 		if(slot_mapping[key] in check): continue
 		check.append(slot_mapping[key])
 		bcap = [req for req in request if req['index']==slot_mapping[key]][0]['battery_capacity']
-		dur = math.ceil(charging_port['power']*60/bcap)
+		dur = helper.find_duration(charging_port['power'], bcap)
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
@@ -69,8 +70,7 @@ def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_i
 		possibleSlots = graph[request_id]
 	else:
 		csidx, pidx = port_id.split('p')
-
-		duration = math.ceil(charging_stations[int(csidx)]["ports"][int(pidx)]['power']*60/charging_requests[request_id]["battery_capacity"])
+		duration = helper.find_duration(charging_stations[int(csidx)]["ports"][int(pidx)]['power'], charging_requests[request_id]['battery_capacity'])
 		nslots = int(math.ceil(duration/SLOT_TIME))
 		possibleSlots = graphs[port_id][request_id]
 

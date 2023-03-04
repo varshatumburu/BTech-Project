@@ -18,6 +18,9 @@ geolocator = Nominatim(user_agent="Slot Scheduling App")
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
+def find_duration(port_power, battery_capacity, power_factor=0.8):
+    return math.ceil(battery_capacity/(port_power*power_factor))
+
 def get_eco_zoom_level(radius):
     level=17
     p=1
@@ -234,7 +237,7 @@ def get_nearest_ports_pq(request, nearest_cs):
         dist, station_index = nearest_cs.get()
         sorted_ports = sorted(stations.loc[station_index]["ports"], key = lambda x:len(x["vehicles"]))
         for port in sorted_ports:
-            duration = port["power"]*60/request["battery_capacity"]
+            duration = find_duration(port["power"], request["battery_capacity"])
             if request["vehicle_type"] in port["vehicles"] and duration<=request["end_time"]-request["start_time"]:
                 port_id = str(station_index)+"p"+str(port["id"])
                 q.put(port_id)

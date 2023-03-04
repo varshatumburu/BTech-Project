@@ -13,7 +13,7 @@ def write_scripts(ncs):
 			new_port["id"] = len(new_station["ports"])
 			new_port["type"]="Level"+str(random.randint(1,3))+random.choice(["AC","DC"])
 			new_port["voltage"]= random.randrange(20,280,10)
-			new_port["power"] = random.randint(2,20)
+			new_port["power"] = random.randint(5,15)
 			new_port["vehicles"] = sorted(random.sample(["4w","3w","2w"], k=random.randint(1,3)))
 			new_station["ports"].append(new_port)
 		stations.append(new_station)

@@ -94,7 +94,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
-        # cs_generator.write_scripts(number_of_cs)
+        cs_generator.write_scripts(number_of_cs)
         requests_df = pd.read_json(config.DATASET+"/requests.json")
         stations_df = pd.read_json(config.DATASET+"/charging_stations.json")
         config.N_CLICKS = n_clicks
@@ -207,7 +207,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             charging_port = config.CHARGING_STATIONS.to_dict("records")[csno]["ports"][portno]
     
             st = helper.roundup(stime)
-            duration = math.ceil(charging_port['power']*60/bcap)
+            duration = helper.find_duration(charging_port['power'], bcap)
             nslots = int(math.ceil(duration/SLOT_TIME))
             config.REQUIRED_SLOTS[new_idx]=nslots
             matchedSlots = []

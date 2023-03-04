@@ -4,40 +4,12 @@
         "ports": [
             {
                 "id": 0,
-                "type": "Level1DC",
-                "voltage": 40,
-                "power": 18,
+                "type": "Level3AC",
+                "voltage": 120,
+                "power": 13,
                 "vehicles": [
                     "2w",
-                    "3w"
-                ]
-            },
-            {
-                "id": 1,
-                "type": "Level1DC",
-                "voltage": 160,
-                "power": 9,
-                "vehicles": [
-                    "2w",
-                    "4w"
-                ]
-            },
-            {
-                "id": 2,
-                "type": "Level2AC",
-                "voltage": 150,
-                "power": 19,
-                "vehicles": [
-                    "4w"
-                ]
-            },
-            {
-                "id": 3,
-                "type": "Level2AC",
-                "voltage": 110,
-                "power": 7,
-                "vehicles": [
-                    "2w",
+                    "3w",
                     "4w"
                 ]
             }
@@ -48,18 +20,47 @@
         "ports": [
             {
                 "id": 0,
-                "type": "Level3AC",
-                "voltage": 120,
-                "power": 19,
+                "type": "Level3DC",
+                "voltage": 20,
+                "power": 6,
                 "vehicles": [
-                    "3w"
+                    "2w",
+                    "3w",
+                    "4w"
                 ]
             },
             {
                 "id": 1,
-                "type": "Level3AC",
-                "voltage": 20,
-                "power": 11,
+                "type": "Level1AC",
+                "voltage": 250,
+                "power": 8,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 2,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level2AC",
+                "voltage": 130,
+                "power": 9,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 1,
+                "type": "Level2AC",
+                "voltage": 270,
+                "power": 9,
                 "vehicles": [
                     "2w",
                     "3w",
@@ -68,9 +69,198 @@
             },
             {
                 "id": 2,
+                "type": "Level1AC",
+                "voltage": 140,
+                "power": 6,
+                "vehicles": [
+                    "3w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 3,
                 "type": "Level2DC",
-                "voltage": 210,
-                "power": 19,
+                "voltage": 260,
+                "power": 12,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 3,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level2AC",
+                "voltage": 180,
+                "power": 12,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 1,
+                "type": "Level3AC",
+                "voltage": 220,
+                "power": 6,
+                "vehicles": [
+                    "2w",
+                    "3w"
+                ]
+            },
+            {
+                "id": 2,
+                "type": "Level1AC",
+                "voltage": 170,
+                "power": 12,
+                "vehicles": [
+                    "2w",
+                    "3w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 4,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level1DC",
+                "voltage": 90,
+                "power": 6,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 5,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level3AC",
+                "voltage": 140,
+                "power": 5,
+                "vehicles": [
+                    "2w",
+                    "3w"
+                ]
+            },
+            {
+                "id": 1,
+                "type": "Level3AC",
+                "voltage": 110,
+                "power": 9,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 2,
+                "type": "Level3DC",
+                "voltage": 190,
+                "power": 11,
+                "vehicles": [
+                    "2w",
+                    "4w"
+                ]
+            },
+            {
+                "id": 3,
+                "type": "Level1DC",
+                "voltage": 180,
+                "power": 14,
+                "vehicles": [
+                    "2w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 6,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level1AC",
+                "voltage": 30,
+                "power": 15,
+                "vehicles": [
+                    "2w",
+                    "3w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 7,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level3DC",
+                "voltage": 260,
+                "power": 6,
+                "vehicles": [
+                    "3w"
+                ]
+            },
+            {
+                "id": 1,
+                "type": "Level3AC",
+                "voltage": 120,
+                "power": 10,
+                "vehicles": [
+                    "2w",
+                    "3w"
+                ]
+            },
+            {
+                "id": 2,
+                "type": "Level3AC",
+                "voltage": 50,
+                "power": 14,
+                "vehicles": [
+                    "2w",
+                    "3w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 8,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level3DC",
+                "voltage": 140,
+                "power": 14,
+                "vehicles": [
+                    "2w",
+                    "4w"
+                ]
+            }
+        ]
+    },
+    {
+        "node": 9,
+        "ports": [
+            {
+                "id": 0,
+                "type": "Level3DC",
+                "voltage": 260,
+                "power": 12,
                 "vehicles": [
                     "4w"
                 ]

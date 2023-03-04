@@ -18,6 +18,8 @@ class Job:
 	def __lt__(self, other: object) -> bool:
 		return self.end< other.end
 
+def find_duration(port_power, battery_capacity, power_factor=0.8):
+    return math.ceil(battery_capacity/(port_power*power_factor))
 
 def optimalNonConflict(arr, i, vis , sorted_list):
 	for j in sorted_list:
@@ -80,7 +82,7 @@ def prebooked_scheduling(requests, port):
 
 	permuted_jobs = []
 	for r in requests:
-		interval = math.ceil(port['power']*60/r['battery_capacity'])
+		interval = find_duration(port['power'], r['battery_capacity'])
 		s = math.ceil(r['start_time']/SLOT_TIME) * SLOT_TIME
 
 		for start in range(s, r['end_time'], SLOT_TIME):
