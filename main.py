@@ -94,7 +94,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
-        cs_generator.write_scripts(number_of_cs)
+        # cs_generator.write_scripts(number_of_cs)
         requests_df = pd.read_json(config.DATASET+"/requests.json")
         stations_df = pd.read_json(config.DATASET+"/charging_stations.json")
         config.N_CLICKS = n_clicks
@@ -120,7 +120,6 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         for i in range(len(config.X_NODES)):
             positions.append(dl.Marker(position=[config.Y_NODES[i],config.X_NODES[i]],children=dl.Tooltip(i, direction='top', permanent=True),riseOnHover=True))
 
-        # print("all nodes plotted")
         # Plot request nodes on map
         request_nodes = random.choices([i for i in range(0,num_of_tot_nodes) if i not in config.CS_NODES],k=requests_df.shape[0])
         requests_df['node'] = request_nodes
@@ -138,7 +137,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         # print("request nodes plotted")
         config.REQUEST_MAPPING = helper.mapRequests2Ports(len(requests_df),config.NEAREST_PORTS)
         blocked=set(); leftover=[]
-        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.REQUEST_MAPPING,config.NEAREST_PORTS)
+        helper.iterative_scheduling(len(requests_df),blocked,leftover,config.REQUEST_MAPPING,config.NEAREST_PORTS, offline=1)
 
         # Plot charging stations on map
         config.CS_POSITIONS = [dl.Marker(position=[config.Y_NODES[node],config.X_NODES[node]],children=dl.Tooltip(idx, direction='top', permanent=True),\
@@ -224,11 +223,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
                 config.REQUEST_MAPPING[port_id]=[]
             config.REQUEST_MAPPING[port_id].append(new_idx)
 
-            matching.used.clear()
             if(config.SLOT_MAPPING.get(port_id)==None): 
                 config.SLOT_MAPPING[port_id]={}
 
-            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING, port_id)):
+            if(matching.kuhn(new_idx, config.VISITED, 0, config.SLOT_MAPPING, port_id)):
                 print(f"\n>>> REQUEST ACCEPTED! Accommodated in Port {port_id}")
                 alert_message = f"Request Accepted -> Accommodated in Port {port_id}"
                 alert_open = True; alert_color="success"

@@ -178,7 +178,7 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, location, ra
             matching.used.clear()
             if(config.SLOT_MAPPING.get(station)==None): 
                 config.SLOT_MAPPING[station]={}
-            if(matching.kuhn(new_idx, 0, config.SLOT_MAPPING[station], station)):
+            if(matching.kuhn(new_idx, dict(), 0, config.SLOT_MAPPING[station], station)):
                 print(f"\n>>> REQUEST ACCEPTED! Accommodated in Station {station}")
                 alert_message = f"Request Accepted -> Accommodated in Station {station}"
                 alert_open = True; alert_color="success"

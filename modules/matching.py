@@ -13,7 +13,7 @@ def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
 graph=dict(); reqSlots = config.REQUIRED_SLOTS
-slot_mapping = dict(); used=dict()
+slot_mapping = dict()
 graphs = config.POSSIBLE_SLOTS
 
 def createGraph(requests, port_id="-1", charging_port={}):
@@ -24,8 +24,8 @@ def createGraph(requests, port_id="-1", charging_port={}):
 			duration = math.ceil(charging_port['power']*60/req['battery_capacity'])
 		else: 
 			duration = req['duration']
-		nslots = int(math.ceil(duration/SLOT_TIME))
-		reqSlots[req['index']]=nslots
+		# nslots = int(math.ceil(duration/SLOT_TIME))
+		# reqSlots[req['index']]=nslots
 
 		matchedSlots=[]
 		i=1
@@ -49,22 +49,32 @@ def printSchedule(charging_port, request=global_requests, slot_mapping=slot_mapp
 		time = datetime.time(int(key*SLOT_TIME)//60, int(key*SLOT_TIME)%60)
 		print(f"Request {slot_mapping[key]} scheduled at {time} for {dur} mins.")
 
-def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port_id="-1"):
+def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_id="-1", shift=[], offline=0):
+	# print(request_id, start_slot, port_id, shift)
+	# if slot_mapping.get(port_id)!=None: print(slot_mapping[port_id])
 
-	if(used.get(src)!=None): return False
-	used[src]=True
+	if(vis.get(port_id)==None): 
+		vis[port_id]=dict()
+	elif(vis[port_id].get(request_id)!=None):
+		return False
+	vis[port_id][request_id]=True
+
 	charging_stations = config.CHARGING_STATIONS.to_dict("records")
 	charging_requests = config.REQUESTS.to_dict("records")
-	nslots = reqSlots[src] # number of slots required to fit
+	# nslots = reqSlots[request_id] # number of slots required to fit
 
 	# Iterate through all ports in 1 cs, take some sorted order of ports 
-	cs, pidx="",""
+	csidx, pidx = "",""
 	if port_id=="-1":
-		possibleSlots = graph[src]
+		possibleSlots = graph[request_id]
 	else:
-		cs, pidx = port_id.split('p')
-		possibleSlots = graphs[port_id][src]
+		csidx, pidx = port_id.split('p')
 
+		duration = math.ceil(charging_stations[int(csidx)]["ports"][int(pidx)]['power']*60/charging_requests[request_id]["battery_capacity"])
+		nslots = int(math.ceil(duration/SLOT_TIME))
+		possibleSlots = graphs[port_id][request_id]
+
+	# print("possible", possibleSlots)
 	for slot in possibleSlots:
 		if slot<start_slot:continue
 
@@ -72,34 +82,42 @@ def kuhn(src, start_slot=0, slot_mapping=slot_mapping, port_id="-1"):
 
 		if(len(busy_slots)==0):
 			for i in range(nslots):
-				slot_mapping[port_id][slot+i]=src
+				slot_mapping[port_id][slot+i]=request_id
 			return True
 		else:
+			# print("bs", busy_slots)
 			for bs in busy_slots:
 				# print(int(cs), slot_mapping[port_id][bs])
 				# print(charging_requests[slot_mapping[port_id][bs]])
-				shiftable_port_indices = [port["id"] for port in charging_stations[int(cs)]["ports"]\
-			      	if charging_requests[slot_mapping[port_id][bs]]["vehicle_type"] in port["vehicles"] \
-					and port["id"]!=int(pidx)]
-				sorted_port_indices = sorted(shiftable_port_indices, key= lambda x: len(charging_stations[int(cs)]["ports"][x]["vehicles"]))
-				# print(sorted_port_indices)
+				if not shift:
+					shiftable_port_indices = [port["id"] for port in charging_stations[int(csidx)]["ports"]\
+						if charging_requests[request_id]["vehicle_type"] in port["vehicles"] \
+						and port["id"]!=int(pidx)]
+					sorted_port_indices = sorted(shiftable_port_indices, key= lambda x: len(charging_stations[int(csidx)]["ports"][x]["vehicles"]))
+					shift = sorted_port_indices
 
-				if(kuhn(slot_mapping[port_id][bs], slot+nslots, slot_mapping, port_id)):
+				if(kuhn(slot_mapping[port_id][bs], vis, slot+nslots, slot_mapping, port_id, [], offline)):
 					for i in range(nslots):
-						slot_mapping[port_id][slot+i]=src
+						slot_mapping[port_id][slot+i]=request_id
 					return True
-				else: 
-					for sp in sorted_port_indices:
-						next_portid = cs+"p"+str(sp)
-						# print(port_id, next_portid)
-						if(kuhn(slot_mapping[port_id][bs], 0, slot_mapping, next_portid)):
+				elif not offline: 
+					for sp in shift:
+						next_portid = csidx+"p"+str(sp)
+						shift_reqid = slot_mapping[port_id][bs]
+						shift.remove(sp)
+						if graphs.get(next_portid)==None: graphs[next_portid]={}
+						graphs[next_portid][shift_reqid] = graphs[port_id][shift_reqid]
+
+						if(kuhn(shift_reqid, vis, 0, slot_mapping, next_portid, shift)):
+							# print(slot_mapping[port_id][bs], next_portid)
 							for i in range(nslots):
-								slot_mapping[port_id][slot+i]=src
+								slot_mapping[port_id][slot+i]=request_id
+							# print("ok2")
 							return True
 
 	return False
 
-def init_schedule(reqSet, port_id="-1", slot_mapping = dict()):
+def init_schedule(reqSet, port_id="-1", slot_mapping = dict(), offline=0):
 	if(port_id=="-1"): graph.clear()
 	else: graphs[port_id] = {}
 
@@ -113,8 +131,8 @@ def init_schedule(reqSet, port_id="-1", slot_mapping = dict()):
 	
 	slot_mapping[port_id]={}
 	for i in [r['index'] for r in requests]:
-		used.clear()
-		if(kuhn(i,0,slot_mapping, port_id)): pass
+		visited = dict()
+		if(kuhn(i, visited, 0, slot_mapping, port_id,[], offline)): pass
 
 	printSchedule(charging_port, global_requests, slot_mapping[port_id])
 	return selected, slot_mapping[port_id]
@@ -145,8 +163,8 @@ def dynamic_requests():
 
 		graph[idx]=(matchedSlots)
 
-		used.clear()
-		if(kuhn(idx)): 
+		visited=dict()
+		if(kuhn(idx, visited)): 
 			print("\n>>> REQUEST ACCEPTED! NEW SCHEDULE:")
 		else: 
 			print("\n>>> REQUEST DENIED. BUSY SCHEDULE.")
@@ -158,8 +176,8 @@ if __name__=='__main__':
 	createGraph(global_requests)
 
 	for i in [r['index'] for r in global_requests]:
-		used.clear()
-		if(kuhn(i)): pass
+		visited = dict()
+		if(kuhn(i, visited)): pass
 
 	printSchedule()
 	dynamic_requests()

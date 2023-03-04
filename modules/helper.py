@@ -182,7 +182,7 @@ def mapRequests2Ports(nreq, nearest_ports):
 
     return reqMapping
 
-def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_ports):
+def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_ports, offline):
     iter=0; prev=-1
     # print(reqMapping)
     while len(blocked)!=nreq and prev!=len(blocked) and reqMapping:
@@ -194,7 +194,7 @@ def iterative_scheduling(nreq, blocked, leftover, reqMapping, nearest_ports):
             if len(reqidx)==0: continue
             print(f"\nSchedule for Port {port}:")
 
-            selected, config.SLOT_MAPPING[port] = matching.init_schedule(reqidx, port, dict())
+            selected, config.SLOT_MAPPING[port] = matching.init_schedule(reqidx, port, dict(), offline)
             leftover = list(set(reqidx)-set(selected))
 
             for lr in leftover:
