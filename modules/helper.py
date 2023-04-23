@@ -7,8 +7,9 @@ import networkx as nx
 from queue import PriorityQueue, Queue
 import math, sys
 from geopy.geocoders import Nominatim
+import os
 
-sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
+sys.path.insert(1, os.path.join(sys.path[0], 'modules'))
 import config, matching
 from scheduler import prebooked_scheduling, SLOT_TIME
 

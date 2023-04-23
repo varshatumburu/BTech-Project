@@ -11,7 +11,8 @@ import datetime
 import math
 from modules.scheduler import SLOT_TIME
 import random
-import cs_generator
+import json
+import sys, os
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
 
@@ -94,9 +95,9 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
     
     fig, num_of_tot_nodes, config.GRAPH, A, config.X_NODES, config.Y_NODES, center, zoomLevel, latitude, longitude = helper.find_all_nodes(location, radius, number_of_cs)
     if n_clicks and n_clicks>config.N_CLICKS:
-        cs_generator.write_scripts(number_of_cs)
-        requests_df = pd.read_json(config.DATASET+"/requests.json")
-        stations_df = pd.read_json(config.DATASET+"/charging_stations.json")
+        # cs_generator.write_scripts(number_of_cs)
+        requests_df = pd.read_json(os.path.join(sys.path[0], 'datasets')+"/base_requests.json")
+        stations_df = pd.read_json(os.path.join(sys.path[0], 'datasets')+"/charging_stations.json")
         config.N_CLICKS = n_clicks
         testcases = []
         corners = []
@@ -152,6 +153,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
             if "3w" in exclusive_ports: w3_ports.append(station["node"])
             if "2w" in exclusive_ports: w2_ports.append(station["node"])
             
+        json_object = json.dumps(config.SLOT_MAPPING, indent=4)
+        with open("datasets/slot_mapping.json","w") as f:
+            f.write(json_object)
+            
         config.W4_PORTS = [dl.Marker(position=[config.Y_NODES[id],config.X_NODES[id]],children=dl.Tooltip([idx for idx,f in enumerate(stations) if f["node"]==id][0], direction='top', permanent=True),\
             riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/free-map-pin-icon/free-map-pin-icon-6.jpg','iconSize':[30,30]}) for id in w4_ports]
         
@@ -193,7 +198,8 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         }, index=[0])
         
         config.REQUESTS = pd.concat([new_request, config.REQUESTS[:]]).drop_duplicates().reset_index(drop=True)
-
+        config.REQUESTS.to_json('datasets/requests.json', orient="records", indent=4)
+        
         config.REQUEST_NODES.append(dl.Marker(position=[config.Y_NODES[req_nodeid],config.X_NODES[req_nodeid]],children=dl.Tooltip(new_idx, direction='right', permanent=True),riseOnHover=True,icon={'iconUrl':'https://icon-library.com/images/marker-icon/marker-icon-12.jpg','iconSize':[40,40]}))
         config.NEAREST_CS[new_idx] = helper.get_nearest_cs_pq(config.X_NODES[req_nodeid], config.Y_NODES[req_nodeid], current_soc*mileage*10)
         config.NEAREST_PORTS[new_idx] = helper.get_nearest_ports_pq(new_request.to_dict('index')[0], config.NEAREST_CS[new_idx])
@@ -239,6 +245,10 @@ def hp_update_map(n_clicks, sched_clicks, req_nodeid, stime, etime, current_soc,
         if(flag==0): 
             print("\n>>> REQUEST DENIED.")
             alert_message = "No slot available for given specifications."; alert_open=True; alert_color="danger"
+
+        json_object = json.dumps(config.SLOT_MAPPING, indent=4)
+        with open("datasets/slot_mapping.json","w") as f:
+            f.write(json_object)
     
     return config.POSITIONS, config.REQUEST_NODES, config.CS_POSITIONS, config.POLYGON, config.W2_PORTS, config.W3_PORTS, config.W4_PORTS, config.CENTER, config.ZOOM_LEVEL, config.REQUESTS.to_dict('records'), config.COLUMNS, config.CS_DROPDOWN.to_dict('records'), config.REQUESTS_DROPDOWN.to_dict('records'), alert_message, alert_open, alert_color
 

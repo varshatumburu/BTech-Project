@@ -3,7 +3,7 @@ import json
 import datetime
 
 requests = []
-for i in range(100):
+for i in range(500):
 	new_request = {}
 	new_request["index"]=i
 	new_request["start_time"]=random.randint(0,1420)
@@ -18,7 +18,7 @@ for i in range(100):
 	requests.append(new_request)
 
 json_object = json.dumps(requests, indent=4)
-with open("datasets/requests.json","w") as json_file:
+with open("datasets/base_requests.json","w") as json_file:
 	json_file.write(json_object)
 
 

@@ -1,21 +1,20 @@
-import json, datetime, math, sys
+import json, datetime, math, sys, os
+import pandas as pd
 
-sys.path.insert(1, '/home/varsha_1901cs69/btp/scheduling/modules')
+sys.path.insert(1, os.path.join(sys.path[0], 'modules'))
 from scheduler import prebooked_scheduling, SLOT_TIME
 import helper
 
-sys.path.insert(2, '/home/varsha_1901cs69/btp/scheduling')
+sys.path.insert(2, sys.path[0])
 import config
 
-
-global_requests = json.load(open(config.DATASET + "/requests.json"))
+global_requests = json.load(open(os.path.join(sys.path[0], 'datasets') + "/base_requests.json"))
 
 def roundup(x):
     return int(math.ceil(x / SLOT_TIME)) * int(SLOT_TIME)
 
 graph=dict(); reqSlots = config.REQUIRED_SLOTS
 slot_mapping = dict()
-graphs = config.POSSIBLE_SLOTS
 
 def createGraph(requests, port_id="-1", charging_port={}):
 	duration = 0
@@ -37,7 +36,10 @@ def createGraph(requests, port_id="-1", charging_port={}):
 		if(port_id=="-1"):
 			graph[req['index']]=(matchedSlots)
 		else:
-			graphs[port_id][req['index']]=(matchedSlots)
+			config.POSSIBLE_SLOTS[port_id][req['index']]=(matchedSlots)
+
+	graphs_object = json.dumps(config.POSSIBLE_SLOTS, indent=4)
+	with open("datasets/possible_slots.json","w") as f: f.write(graphs_object)
 	
 def printSchedule(charging_port, request=global_requests, slot_mapping=slot_mapping):
 
@@ -53,18 +55,21 @@ def printSchedule(charging_port, request=global_requests, slot_mapping=slot_mapp
 def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_id="-1", shift=[], offline=0):
 	# print(request_id, start_slot, port_id, shift)
 	# if slot_mapping.get(port_id)!=None: print(slot_mapping[port_id])
-
+	# print(request_id, "--", port_id)
 	if(vis.get(port_id)==None): 
 		vis[port_id]=dict()
 	elif(vis[port_id].get(request_id)!=None):
 		return False
 	vis[port_id][request_id]=True
 
+	if config.CHARGING_STATIONS.empty: 
+		config.CHARGING_STATIONS = pd.read_json('datasets/charging_stations.json')
 	charging_stations = config.CHARGING_STATIONS.to_dict("records")
 	charging_requests = config.REQUESTS.to_dict("records")
 	# nslots = reqSlots[request_id] # number of slots required to fit
 
 	# Iterate through all ports in 1 cs, take some sorted order of ports 
+	# print(port_id, config.POSSIBLE_SLOTS[port_id])
 	csidx, pidx = "",""
 	if port_id=="-1":
 		possibleSlots = graph[request_id]
@@ -72,9 +77,9 @@ def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_i
 		csidx, pidx = port_id.split('p')
 		duration = helper.find_duration(charging_stations[int(csidx)]["ports"][int(pidx)]['power'], charging_requests[request_id]['battery_capacity'])
 		nslots = int(math.ceil(duration/SLOT_TIME))
-		possibleSlots = graphs[port_id][request_id]
+		possibleSlots = config.POSSIBLE_SLOTS[port_id][request_id]
 
-	# print("possible", possibleSlots)
+	if(slot_mapping.get(port_id)==None): slot_mapping[port_id]={}
 	for slot in possibleSlots:
 		if slot<start_slot:continue
 
@@ -85,7 +90,6 @@ def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_i
 				slot_mapping[port_id][slot+i]=request_id
 			return True
 		else:
-			# print("bs", busy_slots)
 			for bs in busy_slots:
 				# print(int(cs), slot_mapping[port_id][bs])
 				# print(charging_requests[slot_mapping[port_id][bs]])
@@ -105,21 +109,23 @@ def kuhn(request_id, vis=dict(), start_slot=0, slot_mapping=slot_mapping, port_i
 						next_portid = csidx+"p"+str(sp)
 						shift_reqid = slot_mapping[port_id][bs]
 						shift.remove(sp)
-						if graphs.get(next_portid)==None: graphs[next_portid]={}
-						graphs[next_portid][shift_reqid] = graphs[port_id][shift_reqid]
+						if config.POSSIBLE_SLOTS.get(next_portid)==None: config.POSSIBLE_SLOTS[next_portid]={}
+						config.POSSIBLE_SLOTS[next_portid][shift_reqid] = config.POSSIBLE_SLOTS[port_id][shift_reqid]
+
+						graphs_object = json.dumps(config.POSSIBLE_SLOTS, indent=4)
+						with open("datasets/possible_slots.json","w") as f: f.write(graphs_object)
 
 						if(kuhn(shift_reqid, vis, 0, slot_mapping, next_portid, shift)):
 							# print(slot_mapping[port_id][bs], next_portid)
 							for i in range(nslots):
 								slot_mapping[port_id][slot+i]=request_id
-							# print("ok2")
 							return True
 
 	return False
 
 def init_schedule(reqSet, port_id="-1", slot_mapping = dict(), offline=0):
 	if(port_id=="-1"): graph.clear()
-	else: graphs[port_id] = {}
+	else: config.POSSIBLE_SLOTS[port_id] = {}
 
 	requests = [req for req in global_requests if req['index'] in reqSet]
 	csno = int(port_id.split('p')[0]); portno= int(port_id.split('p')[1])
